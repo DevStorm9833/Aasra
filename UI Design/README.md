@@ -1,0 +1,5 @@
+- Normal, Large Text
+- High Contrast Colors 
+  - Cyan, Magneta, Yellow, Green, White on black
+  - Complementary Colors
+- Read Aloud Mode
