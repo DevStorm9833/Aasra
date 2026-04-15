@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+@theme {
+  --color-warm-orange: #FF8C42;
+  --color-soft-peach: #FFD6A5;
+  --color-sage-green: #9CAD7F;
+  --color-cream-white: #FFF9F0;
+  --color-deep-navy: #2C3E50;
+  --color-soft-lavender: #C5B9E0;
+  --color-muted-teal: #5C9E9E;
+  --color-gentle-coral: #FFB4A2;
+  --color-honey-yellow: #F4D03F;
+
+  --radius-sm: 16px;
+  --radius-md: 24px;
+  --radius-lg: 32px;
+  --radius-pill: 60px;
+}
+
+body {
+  @apply bg-[linear-gradient(135deg,#f5f0ff_0%,#FFF9F0_50%,#fff5eb_100%)] text-deep-navy font-sans min-h-screen overflow-x-hidden;
+  font-family: 'Nunito', sans-serif;
+}
+
+h1, h2, h3, .font-poppins {
+  font-family: 'Poppins', sans-serif;
+}
