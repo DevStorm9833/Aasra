@@ -1,8 +1,0 @@
-[core]
-	repositoryformatversion = 0
-	filemode = true
-	bare = false
-	logallrefupdates = true
-[remote "origin"]
-	url = https://DevStorm9833@github.com/DevStorm9833/Aasra.git
-	fetch = +refs/heads/*:refs/remotes/origin/*
