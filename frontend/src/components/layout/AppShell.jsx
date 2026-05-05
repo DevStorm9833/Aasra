@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sidebar, BottomNav } from './Navigation';
+import { Sidebar, BottomNav } from './Navigation.jsx';
 import { AlertTriangle, X, Phone, Stethoscope, Flame, UserX, Megaphone, MapPin, Users, Timer, Navigation as NavIcon } from 'lucide-react';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
