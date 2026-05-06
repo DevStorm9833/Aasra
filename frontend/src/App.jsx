@@ -13,8 +13,8 @@ import SettingsModal from './components/SettingsModal';
 // Pages
 import ServicesPage from './pages/ServicesPage';
 import AuthPage from './pages/AuthPage';
-import PersonaSelection from './pages/PersonaSelection';
 import ContactPage from './pages/ContactPage';
+import SeniorHub from './pages/SeniorHub';
 
 export default function App() {
   const location = useLocation();
@@ -62,10 +62,8 @@ export default function App() {
           <Routes location={location} key={location.pathname}>
             <Route path="/" element={<ServicesPage />} />
             <Route path="/auth" element={<AuthPage />} />
-            <Route path="/persona" element={<PersonaSelection />} />
             <Route path="/contact-us" element={<ContactPage />} />
-            {/* Portals to be built in Phase 2 & 3 */}
-            <Route path="/senior-hub" element={<div className="p-20 text-center text-4xl font-black">Senior Hub (Phase 2) Coming Soon...</div>} />
+            <Route path="/senior-hub" element={<SeniorHub />} />
             <Route path="/volunteer-hub" element={<div className="p-20 text-center text-4xl font-black">Volunteer Hub (Phase 3) Coming Soon...</div>} />
           </Routes>
         </AnimatePresence>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Check,
@@ -79,6 +80,7 @@ const ProblemBadge = ({ problem, problemIcon: ProblemIcon }) => {
 };
 
 const ServicesPage = () => {
+  const navigate = useNavigate();
   const serviceCategories = [
     {
       name: "Daily Help",
@@ -123,11 +125,17 @@ const ServicesPage = () => {
               Our volunteers are students and young professionals — kind, patient, and background-verified through in-person visits. They are not just helpers; they are <span className="text-[var(--color-accent-orange)] font-extrabold">companions who care</span>.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 mt-8">
-              <button className="flex-1 py-4 bg-gradient-to-r from-[var(--color-accent-orange)] to-[var(--color-accent-saffron)] text-white font-bold uppercase text-[10px] tracking-widest rounded-full hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex flex-col items-center justify-center gap-1 border border-transparent">
+              <button
+                onClick={() => navigate('/auth')}
+                className="flex-1 py-4 bg-gradient-to-r from-[var(--color-accent-orange)] to-[var(--color-accent-saffron)] text-white font-bold uppercase text-[10px] tracking-widest rounded-full hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex flex-col items-center justify-center gap-1 border border-transparent"
+              >
                 <span className="text-sm">Seniors</span>
                 <span className="text-[10px] opacity-90">I need Help</span>
               </button>
-              <button className="flex-1 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold uppercase text-[10px] tracking-widest rounded-full hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex flex-col items-center justify-center gap-1 border border-transparent">
+              <button
+                onClick={() => navigate('/auth')}
+                className="flex-1 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold uppercase text-[10px] tracking-widest rounded-full hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex flex-col items-center justify-center gap-1 border border-transparent"
+              >
                 <span className="text-sm">Volunteers</span>
                 <span className="text-[10px] opacity-90">I want to Help</span>
               </button>
