@@ -15,6 +15,7 @@ import ServicesPage from './pages/ServicesPage';
 import AuthPage from './pages/AuthPage';
 import ContactPage from './pages/ContactPage';
 import SeniorHub from './pages/SeniorHub';
+import VolunteerHub from './pages/VolunteerHub';
 
 export default function App() {
   const location = useLocation();
@@ -64,7 +65,7 @@ export default function App() {
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/contact-us" element={<ContactPage />} />
             <Route path="/senior-hub" element={<SeniorHub />} />
-            <Route path="/volunteer-hub" element={<div className="p-20 text-center text-4xl font-black">Volunteer Hub (Phase 3) Coming Soon...</div>} />
+            <Route path="/volunteer-hub" element={<VolunteerHub />} />
           </Routes>
         </AnimatePresence>
       </main>
