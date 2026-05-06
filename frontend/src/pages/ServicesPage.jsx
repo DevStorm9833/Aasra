@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Check, 
-  Clock, 
-  Car, 
-  Stethoscope, 
-  Heart, 
-  MessageSquare, 
-  ShoppingBasket, 
-  Pill, 
-  Wrench, 
+import {
+  Check,
+  Clock,
+  Car,
+  Stethoscope,
+  Heart,
+  MessageSquare,
+  ShoppingBasket,
+  Pill,
+  Wrench,
   CreditCard,
   ShieldAlert,
   MapPin,
@@ -114,35 +114,35 @@ const ServicesPage = () => {
       <section className="py-8 px-6 max-w-5xl mx-auto border-b border-[var(--color-gray-soft)] relative">
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mt-4 bg-white/60 backdrop-blur-3xl p-12 rounded-[2.5rem] border border-white/50 shadow-xl shadow-[var(--color-primary-black)]/5 relative overflow-hidden">
-           <div className="absolute inset-0 pointer-events-none mix-blend-multiply opacity-50" style={subtleJaliPattern}></div>
-           <div className="space-y-6 relative z-10">
-              <p className="text-lg font-bold leading-relaxed text-[var(--color-primary-black)]/90">
-                Born from the reality that 19,500 Indians turn 60 every day, and traditional family support is fading, AASRA exists to ensure no senior feels alone, helpless, or forgotten.
-              </p>
-              <p className="text-[var(--color-gray-mid)] font-medium leading-relaxed">
-                Our volunteers are students and young professionals — kind, patient, and background-verified through in-person visits. They are not just helpers; they are <span className="text-[var(--color-accent-orange)] font-extrabold">companions who care</span>.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 mt-8">
-                 <button className="flex-1 py-4 bg-gradient-to-r from-[var(--color-accent-orange)] to-[var(--color-accent-saffron)] text-white font-bold uppercase text-[10px] tracking-widest rounded-full hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex flex-col items-center justify-center gap-1 border border-transparent">
-                   <span className="text-sm">Seniors</span>
-                   <span className="text-[10px] opacity-90">I need Help</span>
-                 </button>
-                 <button className="flex-1 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold uppercase text-[10px] tracking-widest rounded-full hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex flex-col items-center justify-center gap-1 border border-transparent">
-                   <span className="text-sm">Volunteers</span>
-                   <span className="text-[10px] opacity-90">I want to Help</span>
-                 </button>
-              </div>
-           </div>
-           <div className="space-y-4 relative z-10">
-              <div className="p-6 bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border border-[var(--color-gray-soft)] hover:shadow-md transition-shadow">
-                 <h4 className="font-bold uppercase text-[0.75rem] tracking-widest mb-2 text-[var(--color-primary-black)]">Verified Volunteers</h4>
-                 <p className="text-xs text-[var(--color-gray-mid)]">In-person visit, document check, reference verification.</p>
-              </div>
-              <div className="p-6 bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border border-[var(--color-gray-soft)] hover:shadow-md transition-shadow">
-                 <h4 className="font-bold uppercase text-[0.75rem] tracking-widest mb-2 text-[var(--color-primary-black)]">Accessibility First</h4>
-                 <p className="text-xs text-[var(--color-gray-mid)]">Voice navigation, big fonts, high contrast, multi-language.</p>
-              </div>
-           </div>
+          <div className="absolute inset-0 pointer-events-none mix-blend-multiply opacity-50" style={subtleJaliPattern}></div>
+          <div className="space-y-6 relative z-10">
+            <p className="text-lg font-bold leading-relaxed text-[var(--color-primary-black)]/90">
+              Born from the reality that 19,500 Indians turn 60 every day, and traditional family support is fading, AASRA exists to ensure no senior feels alone, helpless, or forgotten.
+            </p>
+            <p className="text-[var(--color-gray-mid)] font-medium leading-relaxed">
+              Our volunteers are students and young professionals — kind, patient, and background-verified through in-person visits. They are not just helpers; they are <span className="text-[var(--color-accent-orange)] font-extrabold">companions who care</span>.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 mt-8">
+              <button className="flex-1 py-4 bg-gradient-to-r from-[var(--color-accent-orange)] to-[var(--color-accent-saffron)] text-white font-bold uppercase text-[10px] tracking-widest rounded-full hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex flex-col items-center justify-center gap-1 border border-transparent">
+                <span className="text-sm">Seniors</span>
+                <span className="text-[10px] opacity-90">I need Help</span>
+              </button>
+              <button className="flex-1 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold uppercase text-[10px] tracking-widest rounded-full hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex flex-col items-center justify-center gap-1 border border-transparent">
+                <span className="text-sm">Volunteers</span>
+                <span className="text-[10px] opacity-90">I want to Help</span>
+              </button>
+            </div>
+          </div>
+          <div className="space-y-4 relative z-10">
+            <div className="p-6 bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border border-[var(--color-gray-soft)] hover:shadow-md transition-shadow">
+              <h4 className="font-bold uppercase text-[0.75rem] tracking-widest mb-2 text-[var(--color-primary-black)]">Verified Volunteers</h4>
+              <p className="text-xs text-[var(--color-gray-mid)]">In-person visit, document check, reference verification.</p>
+            </div>
+            <div className="p-6 bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border border-[var(--color-gray-soft)] hover:shadow-md transition-shadow">
+              <h4 className="font-bold uppercase text-[0.75rem] tracking-widest mb-2 text-[var(--color-primary-black)]">Accessibility First</h4>
+              <p className="text-xs text-[var(--color-gray-mid)]">Voice navigation, big fonts, high contrast, multi-language.</p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -177,47 +177,47 @@ const ServicesPage = () => {
       <section className="py-20 px-6 max-w-5xl mx-auto bg-gradient-to-b from-[var(--color-gray-soft)]/30 to-transparent rounded-[3rem] border border-[var(--color-gray-soft)]">
         <SectionHeader title="Subscription Plans" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 px-6 md:px-12">
-           <div className="relative overflow-hidden p-10 bg-gradient-to-br from-[var(--color-primary-black)] to-[#1E293B] text-[var(--color-primary-white)] rounded-[2rem] flex flex-col items-center text-center shadow-2xl border border-[var(--color-primary-black)]">
-              <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20" style={subtleJaliPattern}></div>
-              <div className="relative z-10 w-full flex flex-col items-center">
-                <h3 className="font-bold uppercase tracking-widest text-[11px] mb-8 text-[var(--color-gray-mid)]">Monthly Plan</h3>
-                <div className="mb-8">
-                   <span className="text-5xl font-bold font-instrument text-transparent bg-clip-text bg-gradient-to-r from-[var(--color-accent-orange)] to-[var(--color-accent-saffron)]">₹2000</span>
-                   <p className="text-[10px] font-bold uppercase tracking-widest mt-2 text-[var(--color-gray-mid)]">+ Travel Charges</p>
-                </div>
-                <ul className="space-y-4 mb-10 text-sm font-bold opacity-90">
-                   <li>5 sessions/month</li>
-                   <li className="text-[var(--color-accent-orange)]">1 session FREE</li>
-                </ul>
-                <button className="w-full py-4 bg-gradient-to-r from-[var(--color-accent-orange)] to-[var(--color-accent-saffron)] text-white font-bold uppercase text-[10px] tracking-widest rounded-full hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all">Choose Plan</button>
-              </div>
-           </div>
-           <div className="p-10 bg-white/80 backdrop-blur-xl border border-[var(--color-gray-soft)] rounded-[2rem] flex flex-col items-center text-center shadow-lg hover:shadow-xl transition-shadow">
-              <h3 className="font-bold uppercase tracking-widest text-[11px] mb-8 text-[var(--color-gray-mid)]">Session Plan</h3>
+          <div className="relative overflow-hidden p-10 bg-gradient-to-br from-[var(--color-primary-black)] to-[#1E293B] text-[var(--color-primary-white)] rounded-[2rem] flex flex-col items-center text-center shadow-2xl border border-[var(--color-primary-black)]">
+            <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20" style={subtleJaliPattern}></div>
+            <div className="relative z-10 w-full flex flex-col items-center">
+              <h3 className="font-bold uppercase tracking-widest text-[11px] mb-8 text-[var(--color-gray-mid)]">Monthly Plan</h3>
               <div className="mb-8">
-                 <span className="text-5xl font-bold font-instrument text-[var(--color-primary-black)]">₹500</span>
-                 <p className="text-[10px] font-bold uppercase tracking-widest mt-2 text-[var(--color-gray-mid)]">+ Travel Charges</p>
+                <span className="text-5xl font-bold font-instrument text-transparent bg-clip-text bg-gradient-to-r from-[var(--color-accent-orange)] to-[var(--color-accent-saffron)]">₹2000</span>
+                <p className="text-[10px] font-bold uppercase tracking-widest mt-2 text-[var(--color-gray-mid)]">+ Travel Charges</p>
               </div>
-              <ul className="space-y-4 mb-10 text-sm font-bold text-[var(--color-primary-black)]/70">
-                 <li>Pay per session</li>
-                 <li>No commitment</li>
+              <ul className="space-y-4 mb-10 text-sm font-bold opacity-90">
+                <li>5 sessions/month</li>
+                <li className="text-[var(--color-accent-orange)]">1 session FREE</li>
               </ul>
-              <button className="w-full py-4 bg-[var(--color-gray-soft)] text-[var(--color-primary-black)] font-bold uppercase text-[10px] tracking-widest rounded-full hover:bg-[var(--color-primary-black)] hover:text-white transition-colors border border-[var(--color-gray-soft)]">Choose Plan</button>
-           </div>
+              <button className="w-full py-4 bg-gradient-to-r from-[var(--color-accent-orange)] to-[var(--color-accent-saffron)] text-white font-bold uppercase text-[10px] tracking-widest rounded-full hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all">Choose Plan</button>
+            </div>
+          </div>
+          <div className="p-10 bg-white/80 backdrop-blur-xl border border-[var(--color-gray-soft)] rounded-[2rem] flex flex-col items-center text-center shadow-lg hover:shadow-xl transition-shadow">
+            <h3 className="font-bold uppercase tracking-widest text-[11px] mb-8 text-[var(--color-gray-mid)]">Session Plan</h3>
+            <div className="mb-8">
+              <span className="text-5xl font-bold font-instrument text-[var(--color-primary-black)]">₹500</span>
+              <p className="text-[10px] font-bold uppercase tracking-widest mt-2 text-[var(--color-gray-mid)]">+ Travel Charges</p>
+            </div>
+            <ul className="space-y-4 mb-10 text-sm font-bold text-[var(--color-primary-black)]/70">
+              <li>Pay per session</li>
+              <li>No commitment</li>
+            </ul>
+            <button className="w-full py-4 bg-[var(--color-gray-soft)] text-[var(--color-primary-black)] font-bold uppercase text-[10px] tracking-widest rounded-full hover:bg-[var(--color-primary-black)] hover:text-white transition-colors border border-[var(--color-gray-soft)]">Choose Plan</button>
+          </div>
         </div>
         <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6 px-6 md:px-12 pb-12">
-            <div className="flex items-center gap-4 p-6 bg-white/70 backdrop-blur-md rounded-2xl border border-[var(--color-gray-soft)] shadow-sm">
-               <div className="p-3 rounded-full bg-[var(--color-gray-soft)]">
-                 <Clock size={20} className="text-[var(--color-primary-black)]" />
-               </div>
-               <p className="text-xs font-bold text-[var(--color-primary-black)]/80">One session = Up to 1 hour of help</p>
+          <div className="flex items-center gap-4 p-6 bg-white/70 backdrop-blur-md rounded-2xl border border-[var(--color-gray-soft)] shadow-sm">
+            <div className="p-3 rounded-full bg-[var(--color-gray-soft)]">
+              <Clock size={20} className="text-[var(--color-primary-black)]" />
             </div>
-            <div className="flex items-center gap-4 p-6 bg-white/70 backdrop-blur-md rounded-2xl border border-[var(--color-gray-soft)] shadow-sm">
-               <div className="p-3 rounded-full bg-[var(--color-gray-soft)]">
-                 <Car size={20} className="text-[var(--color-primary-black)]" />
-               </div>
-               <p className="text-xs font-bold text-[var(--color-primary-black)]/80">Travel: Actual fare or ₹10/km</p>
+            <p className="text-xs font-bold text-[var(--color-primary-black)]/80">One session = Up to 1 hour of help</p>
+          </div>
+          <div className="flex items-center gap-4 p-6 bg-white/70 backdrop-blur-md rounded-2xl border border-[var(--color-gray-soft)] shadow-sm">
+            <div className="p-3 rounded-full bg-[var(--color-gray-soft)]">
+              <Car size={20} className="text-[var(--color-primary-black)]" />
             </div>
+            <p className="text-xs font-bold text-[var(--color-primary-black)]/80">Travel: Actual fare or ₹10/km</p>
+          </div>
         </div>
       </section>
     </div>

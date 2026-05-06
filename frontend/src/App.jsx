@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Phone } from 'lucide-react';
 
 // Hooks
 import { useReadMode } from './hooks/useReadMode';
@@ -12,13 +12,12 @@ import SettingsModal from './components/SettingsModal';
 
 // Pages
 import ServicesPage from './pages/ServicesPage';
-import SeniorHome from './pages/SeniorHome';
+import AuthPage from './pages/AuthPage';
+import PersonaSelection from './pages/PersonaSelection';
 import ContactPage from './pages/ContactPage';
 
-
-
 export default function App() {
-  const [activePage, setActivePage] = useState('services');
+  const location = useLocation();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [config, setConfig] = useState({
     textSize: 'normal',
@@ -29,52 +28,50 @@ export default function App() {
 
   // Enable text size scaling by directly altering HTML base size
   useEffect(() => {
+    // If High Contrast is enabled, force minimum 24px (xl) size
     const sizeMap = { normal: '16px', large: '20px', xl: '24px' };
-    document.documentElement.style.fontSize = sizeMap[config.textSize];
-  }, [config.textSize]);
+    const effectiveSize = config.highContrast ? '24px' : sizeMap[config.textSize];
+    document.documentElement.style.fontSize = effectiveSize;
+  }, [config.textSize, config.highContrast]);
 
   // Hook handles TTS functionality when Read Mode is active
   useReadMode(config.readMode);
 
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [activePage]);
+  }, [location.pathname]);
 
-  // For backward compatibility keep CSS variable
   const baseSize = config.textSize === 'normal' ? 16 : config.textSize === 'large' ? 20 : 24;
+
+  // We only show Navbar/Footer on public/marketing pages
+  const isPublicRoute = location.pathname === '/' || location.pathname === '/contact-us';
 
   return (
     <div
-      className={`min-h-screen flex flex-col transition-all duration-300 ${config.highContrast ? 'high-contrast bg-[var(--color-primary-white)] text-[var(--color-primary-black)] font-inter' : 'bg-[var(--color-primary-white)] text-[var(--color-primary-black)] font-inter'}`}
+      className={`min-h-screen flex flex-col transition-all duration-300 ${config.highContrast ? 'high-contrast bg-[#000] text-[#ffeb3b] font-inter' : 'bg-[var(--color-primary-white)] text-[var(--color-primary-black)] font-inter'}`}
       style={{ '--base-size': `${baseSize}px` }}
     >
-      <Navbar
-        activePage={activePage}
-        setActivePage={setActivePage}
-        openSettings={() => setIsSettingsOpen(true)}
-      />
+      {isPublicRoute && <Navbar openSettings={() => setIsSettingsOpen(true)} />}
 
-      <main className="flex-grow pt-28 md:pt-32 relative">
-        {/* Subtle background mandala-inspired light gradients */}
-        <div className="fixed inset-0 pointer-events-none z-[-1] opacity-40 bg-[radial-gradient(circle_at_top_right,_var(--color-accent-orange)_0%,_transparent_25%),_radial-gradient(circle_at_bottom_left,_var(--color-primary-black)_0%,_transparent_30%)] mix-blend-multiply opacity-10"></div>
+      <main className={`flex-grow relative ${isPublicRoute ? 'pt-28 md:pt-32' : ''}`}>
+        {!config.highContrast && (
+          <div className="fixed inset-0 pointer-events-none z-[-1] opacity-40 bg-[radial-gradient(circle_at_top_right,_var(--color-accent-orange)_0%,_transparent_25%),_radial-gradient(circle_at_bottom_left,_var(--color-primary-black)_0%,_transparent_30%)] mix-blend-multiply opacity-10"></div>
+        )}
 
         <AnimatePresence mode="wait">
-          <motion.div
-            key={activePage}
-            initial={{ opacity: 0, y: 10, filter: 'blur(5px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, y: -10, filter: 'blur(5px)' }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-          >
-            {activePage === 'home' && <SeniorHome />}
-            {activePage === 'services' && <ServicesPage />}
-            {activePage === 'contact-us' && <ContactPage />}
-          </motion.div>
+          <Routes location={location} key={location.pathname}>
+            <Route path="/" element={<ServicesPage />} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/persona" element={<PersonaSelection />} />
+            <Route path="/contact-us" element={<ContactPage />} />
+            {/* Portals to be built in Phase 2 & 3 */}
+            <Route path="/senior-hub" element={<div className="p-20 text-center text-4xl font-black">Senior Hub (Phase 2) Coming Soon...</div>} />
+            <Route path="/volunteer-hub" element={<div className="p-20 text-center text-4xl font-black">Volunteer Hub (Phase 3) Coming Soon...</div>} />
+          </Routes>
         </AnimatePresence>
       </main>
 
-
-      <Footer />
+      {isPublicRoute && <Footer />}
 
       <SettingsModal
         isOpen={isSettingsOpen}
