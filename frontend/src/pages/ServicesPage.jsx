@@ -126,14 +126,14 @@ const ServicesPage = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 mt-8">
               <button
-                onClick={() => navigate('/auth')}
+                onClick={() => navigate('/auth?role=senior')}
                 className="flex-1 py-4 bg-gradient-to-r from-[var(--color-accent-orange)] to-[var(--color-accent-saffron)] text-white font-bold uppercase text-[10px] tracking-widest rounded-full hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex flex-col items-center justify-center gap-1 border border-transparent"
               >
                 <span className="text-sm">Seniors</span>
                 <span className="text-[10px] opacity-90">I need Help</span>
               </button>
               <button
-                onClick={() => navigate('/auth')}
+                onClick={() => navigate('/auth?role=volunteer')}
                 className="flex-1 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold uppercase text-[10px] tracking-widest rounded-full hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex flex-col items-center justify-center gap-1 border border-transparent"
               >
                 <span className="text-sm">Volunteers</span>
