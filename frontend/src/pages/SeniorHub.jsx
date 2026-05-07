@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Clock, MapPin, Calendar as CalendarIcon, AlertTriangle, Coffee, Check, Star, ChevronDown } from 'lucide-react';
+import { Clock, MapPin, Calendar as CalendarIcon, AlertTriangle, Coffee, Check, Star, ChevronDown, Smile, Meh, Frown, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '../lib/supabase';
 
 const subtleJaliPattern = {
   backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20L0 0h40L20 20zM0 40h40L20 20 0 40z' fill='%23FF7043' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E")`
@@ -9,20 +11,91 @@ const subtleJaliPattern = {
 const SeniorHub = () => {
   const navigate = useNavigate();
   const [booking, setBooking] = useState({ date: '', time: '', duration: '', location: 'Home' });
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [selectedEmoji, setSelectedEmoji] = useState(null);
 
-  // Dummy wallet state
+  const [user, setUser] = useState(null);
+  const [credits, setCredits] = useState(5); // Default to 5
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Fetch User & Credits on Mount
+  React.useEffect(() => {
+    const fetchUserData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUser(user);
+        const { data } = await supabase
+          .from('credits')
+          .select('remaining_sessions')
+          .eq('user_id', user.id)
+          .single();
+
+        if (data) setCredits(data.remaining_sessions);
+      }
+    };
+    fetchUserData();
+  }, []);
+
   const totalSessions = 5;
-  const usedSessions = 3;
+  const usedSessions = totalSessions - credits;
 
-  const handleSOS = () => {
+  const handleSOS = async () => {
     alert("SOS ALERT ACTIVATED!\nNotifying your emergency contacts and Aasra support team immediately.");
+    if (user) {
+      await supabase.from('sessions').insert({
+        senior_id: user.id,
+        start_time: new Date().toISOString(),
+        duration_hours: 1,
+        is_emergency_triggered: true,
+        status: 'pending'
+      });
+    }
   };
 
-  const handleBookingSubmit = (e) => {
+  const handleBookingSubmit = async (e) => {
     e.preventDefault();
     if (!booking.date || !booking.time || !booking.duration) return;
-    alert(`Booking Confirmed for ${booking.date} at ${booking.time} for ${booking.duration}. We are matching you with a verified volunteer.`);
-    setBooking({ date: '', time: '', duration: '', location: 'Home' });
+
+    setIsLoading(true);
+    try {
+      // Combine date and time to TIMESTAMPTZ
+      const start_time = new Date(`${booking.date} ${booking.time}`).toISOString();
+      const duration_hours = parseInt(booking.duration.split(' ')[0]) || 1;
+
+      if (user) {
+        const { error } = await supabase.from('sessions').insert({
+          senior_id: user.id,
+          start_time,
+          duration_hours,
+          status: 'pending',
+          location_snapshot: { address: booking.location }
+        });
+        if (error) throw error;
+      } else {
+        console.warn("No user logged in. Simulating DB insert.");
+      }
+
+      alert(`Booking Confirmed for ${booking.date} at ${booking.time}. We are matching you with a verified volunteer.`);
+      setBooking({ date: '', time: '', duration: '', location: 'Home' });
+
+      // Simulate session end after 3 seconds for demo purposes
+      setTimeout(() => {
+        setShowFeedback(true);
+      }, 3000);
+
+    } catch (error) {
+      console.error("Booking Error:", error);
+      alert("Failed to create booking.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleFeedbackSubmit = () => {
+    if (!selectedEmoji) return;
+    alert(`Feedback saved! You rated the session: ${selectedEmoji}`);
+    setShowFeedback(false);
+    setSelectedEmoji(null);
   };
 
   return (
@@ -138,9 +211,10 @@ const SeniorHub = () => {
 
             <button
               type="submit"
-              className="w-full md:w-auto px-12 py-5 bg-gradient-to-r from-[var(--color-accent-orange)] to-[var(--color-accent-saffron)] text-white text-sm font-bold uppercase tracking-widest rounded-full shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all mt-8"
+              disabled={isLoading}
+              className="w-full md:w-auto px-12 py-5 bg-gradient-to-r from-[var(--color-accent-orange)] to-[var(--color-accent-saffron)] text-white text-sm font-bold uppercase tracking-widest rounded-full shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all mt-8 disabled:opacity-50 disabled:scale-100"
             >
-              Confirm Booking
+              {isLoading ? 'Confirming...' : 'Confirm Booking'}
             </button>
           </form>
         </div>
@@ -149,11 +223,76 @@ const SeniorHub = () => {
       {/* Persistent SOS Button */}
       <button
         onClick={handleSOS}
-        className="fixed bottom-8 right-8 w-24 h-24 bg-red-600 text-white rounded-full shadow-[0_8px_30px_rgba(220,38,38,0.4)] flex flex-col items-center justify-center hover:bg-red-700 hover:scale-105 active:scale-95 transition-all z-50 border-[6px] border-white/50 group"
+        className="fixed bottom-8 right-8 w-24 h-24 bg-red-600 text-white rounded-full shadow-[0_8px_30px_rgba(220,38,38,0.4)] flex flex-col items-center justify-center hover:bg-red-700 hover:scale-105 active:scale-95 transition-all z-40 border-[6px] border-white/50 group"
       >
         <AlertTriangle size={32} strokeWidth={3} className="mb-1 group-hover:scale-110 transition-transform" />
         <span className="font-bold text-[10px] uppercase tracking-widest">SOS</span>
       </button>
+
+      {/* Emoji Feedback Modal */}
+      <AnimatePresence>
+        {showFeedback && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-[var(--color-primary-black)]/60 backdrop-blur-sm"
+              onClick={() => setShowFeedback(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white/90 backdrop-blur-xl p-10 md:p-14 rounded-[3rem] shadow-2xl max-w-lg w-full relative z-10 border border-white/50"
+            >
+              <button
+                onClick={() => setShowFeedback(false)}
+                className="absolute top-6 right-6 p-2 text-gray-400 hover:text-gray-800 transition-colors bg-gray-100 hover:bg-gray-200 rounded-full"
+              >
+                <X size={24} />
+              </button>
+
+              <div className="text-center mb-10">
+                <h2 className="text-3xl font-black text-[var(--color-primary-black)] font-poppins mb-4">How was your session?</h2>
+                <p className="text-[var(--color-gray-mid)] font-medium">Your feedback helps us keep the community safe and supportive.</p>
+              </div>
+
+              <div className="flex justify-between items-center mb-12 gap-4">
+                <button
+                  onClick={() => setSelectedEmoji('happy')}
+                  className={`flex flex-col items-center gap-3 p-6 rounded-[2rem] transition-all border-4 ${selectedEmoji === 'happy' ? 'bg-green-50 border-green-500 text-green-600 scale-110 shadow-lg' : 'bg-gray-50 border-transparent text-gray-400 hover:bg-gray-100 hover:scale-105'}`}
+                >
+                  <Smile size={64} strokeWidth={selectedEmoji === 'happy' ? 2.5 : 2} />
+                  <span className="font-bold text-sm uppercase tracking-widest">Great</span>
+                </button>
+
+                <button
+                  onClick={() => setSelectedEmoji('neutral')}
+                  className={`flex flex-col items-center gap-3 p-6 rounded-[2rem] transition-all border-4 ${selectedEmoji === 'neutral' ? 'bg-orange-50 border-orange-500 text-orange-600 scale-110 shadow-lg' : 'bg-gray-50 border-transparent text-gray-400 hover:bg-gray-100 hover:scale-105'}`}
+                >
+                  <Meh size={64} strokeWidth={selectedEmoji === 'neutral' ? 2.5 : 2} />
+                  <span className="font-bold text-sm uppercase tracking-widest">Okay</span>
+                </button>
+
+                <button
+                  onClick={() => setSelectedEmoji('sad')}
+                  className={`flex flex-col items-center gap-3 p-6 rounded-[2rem] transition-all border-4 ${selectedEmoji === 'sad' ? 'bg-red-50 border-red-500 text-red-600 scale-110 shadow-lg' : 'bg-gray-50 border-transparent text-gray-400 hover:bg-gray-100 hover:scale-105'}`}
+                >
+                  <Frown size={64} strokeWidth={selectedEmoji === 'sad' ? 2.5 : 2} />
+                  <span className="font-bold text-sm uppercase tracking-widest">Poor</span>
+                </button>
+              </div>
+
+              <button
+                onClick={handleFeedbackSubmit}
+                disabled={!selectedEmoji}
+                className="w-full py-5 bg-[var(--color-primary-black)] text-white font-bold uppercase tracking-widest rounded-full shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                Submit Feedback
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
     </div>
   );
