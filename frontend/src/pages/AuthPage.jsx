@@ -128,8 +128,12 @@ const AuthPage = () => {
                 <input
                   type="tel"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    if (val.length <= 10) setPhone(val);
+                  }}
                   placeholder="Mobile Number"
+                  maxLength={10}
                   className="w-full pl-16 pr-6 py-5 rounded-2xl text-lg text-[var(--color-primary-black)] font-medium bg-white/80 border border-[var(--color-gray-soft)] outline-none shadow-sm focus:border-[var(--color-accent-orange)] focus:ring-2 focus:ring-[var(--color-accent-orange)]/20 transition-all placeholder:text-[var(--color-gray-mid)]"
                   required
                 />
