@@ -13,6 +13,7 @@ import SettingsModal from './components/SettingsModal';
 // Pages
 import ServicesPage from './pages/ServicesPage';
 import AuthPage from './pages/AuthPage';
+import OnboardingPage from './pages/OnboardingPage';
 import ContactPage from './pages/ContactPage';
 import SeniorHub from './pages/SeniorHub';
 import VolunteerHub from './pages/VolunteerHub';
@@ -63,6 +64,7 @@ export default function App() {
           <Routes location={location} key={location.pathname}>
             <Route path="/" element={<ServicesPage />} />
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/onboarding" element={<OnboardingPage />} />
             <Route path="/contact-us" element={<ContactPage />} />
             <Route path="/senior-hub" element={<SeniorHub />} />
             <Route path="/volunteer-hub" element={<VolunteerHub />} />
