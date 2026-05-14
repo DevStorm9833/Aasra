@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, CheckCircle, ShieldCheck, MapPin, Clock, Award, Star, AlertTriangle } from 'lucide-react';
 
+import { supabase } from '../lib/supabase';
+
 const subtleJaliPattern = {
   backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20L0 0h40L20 20zM0 40h40L20 20 0 40z' fill='%2316A34A' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E")`
 };
@@ -9,6 +11,26 @@ const subtleJaliPattern = {
 const VolunteerHub = () => {
   const navigate = useNavigate();
   const [verificationStatus, setVerificationStatus] = useState('pending'); // 'pending', 'uploaded', 'verified'
+  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
+
+  React.useEffect(() => {
+    const fetchUserData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUser(user);
+
+        // Fetch Profile
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+        if (profileData) setProfile(profileData);
+      }
+    };
+    fetchUserData();
+  }, []);
 
   const handleIDUpload = () => {
     // Simulate upload delay
@@ -32,17 +54,20 @@ const VolunteerHub = () => {
       <nav className="bg-white/80 backdrop-blur-md p-6 md:px-12 border-b border-[var(--color-gray-soft)] flex justify-between items-center relative z-20">
         <div className="flex items-center gap-3">
           <ShieldCheck size={32} className="text-green-600" />
-          <h1 className="text-3xl font-black font-poppins tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-green-500">
-            Volunteer Hub
-          </h1>
+          <div>
+            <h1 className="text-3xl font-black font-poppins tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-green-500">
+              Volunteer Hub
+            </h1>
+            {profile && <p className="text-sm font-bold text-gray-500 mt-1">Hello, {profile.full_name}</p>}
+          </div>
         </div>
-        <button onClick={() => navigate('/')} className="text-sm font-bold uppercase tracking-widest text-[var(--color-gray-mid)] hover:text-green-600 transition-colors px-6 py-2 border border-[var(--color-gray-soft)] rounded-full hover:shadow-sm">
+        <button onClick={async () => { await supabase.auth.signOut(); navigate('/'); }} className="text-sm font-bold uppercase tracking-widest text-[var(--color-green-600)] hover:text-gray-mid transition-colors px-6 py-2 border border-[var(--color-gray-soft)] rounded-full hover:shadow-sm">
           Sign Out
         </button>
       </nav>
 
       <div className="max-w-5xl mx-auto p-6 mt-12 relative z-10 space-y-12">
-        
+
         {/* Verification Status Banner */}
         {verificationStatus !== 'verified' && (
           <div className="bg-orange-50 border border-orange-200 rounded-[2.5rem] p-10 flex flex-col md:flex-row items-center justify-between gap-8 shadow-sm">
@@ -57,7 +82,7 @@ const VolunteerHub = () => {
                 </p>
               </div>
             </div>
-            <button 
+            <button
               onClick={handleIDUpload}
               disabled={verificationStatus === 'uploaded'}
               className="w-full md:w-auto px-8 py-4 bg-orange-600 text-white font-bold uppercase text-xs tracking-widest rounded-full hover:bg-orange-700 transition-colors flex items-center justify-center gap-3 disabled:opacity-50"
@@ -74,7 +99,7 @@ const VolunteerHub = () => {
         {/* Reputation & Badges Section */}
         <div className="bg-white/60 backdrop-blur-3xl rounded-[2.5rem] p-10 shadow-xl shadow-[var(--color-primary-black)]/5 border border-white/50">
           <h2 className="text-2xl font-black mb-8 flex items-center gap-3 text-[var(--color-primary-black)] font-poppins">
-            <Award className="text-green-600" size={28} /> 
+            <Award className="text-green-600" size={28} />
             My Reputation
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">

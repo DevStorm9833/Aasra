@@ -15,15 +15,25 @@ const SeniorHub = () => {
   const [selectedEmoji, setSelectedEmoji] = useState(null);
 
   const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [credits, setCredits] = useState(5); // Default to 5
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch User & Credits on Mount
+  // Fetch User, Profile & Credits on Mount
   React.useEffect(() => {
     const fetchUserData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUser(user);
+
+        // Fetch Profile
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+        if (profileData) setProfile(profileData);
+
         const { data } = await supabase
           .from('credits')
           .select('remaining_sessions')
@@ -104,10 +114,13 @@ const SeniorHub = () => {
 
       {/* Custom Senior Navbar */}
       <nav className="bg-white/80 backdrop-blur-md text-[var(--color-primary-black)] p-6 md:px-12 border-b border-[var(--color-gray-soft)] flex justify-between items-center relative z-20">
-        <h1 className="text-3xl font-black font-poppins tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-[var(--color-accent-orange)] to-[var(--color-accent-saffron)]">
-          Aasra Senior Hub
-        </h1>
-        <button onClick={() => navigate('/')} className="text-sm font-bold uppercase tracking-widest text-[var(--color-gray-mid)] hover:text-[var(--color-accent-orange)] transition-colors px-6 py-2 border border-[var(--color-gray-soft)] rounded-full hover:shadow-sm">
+        <div>
+          <h1 className="text-3xl font-black font-poppins tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-[var(--color-accent-orange)] to-[var(--color-accent-saffron)]">
+            Aasra Senior Hub
+          </h1>
+          {profile && <p className="text-sm font-bold text-gray-500 mt-1">Welcome back, {profile.full_name}</p>}
+        </div>
+        <button onClick={async () => { await supabase.auth.signOut(); navigate('/'); }} className="text-sm font-bold uppercase tracking-widest text-[var(--color-accent-orange)] hover:text-[var(--color-gray-mid)] transition-colors px-6 py-2 border border-[var(--color-gray-soft)] rounded-full hover:shadow-sm">
           Sign Out
         </button>
       </nav>
