@@ -14,6 +14,7 @@ const OnboardingPage = () => {
   const role = searchParams.get('role') || 'senior';
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingProfile, setIsCheckingProfile] = useState(true);
   const [user, setUser] = useState(null);
 
   // Common State
@@ -71,6 +72,8 @@ const OnboardingPage = () => {
         const phoneDigits = user.phone.replace(/\D/g, '').slice(-10);
         setFormData(prev => ({ ...prev, phone_number: phoneDigits }));
       }
+
+      setIsCheckingProfile(false);
     };
     fetchUser();
   }, [navigate, role]);
@@ -150,7 +153,7 @@ const OnboardingPage = () => {
     }
   };
 
-  if (!user) return <div className="min-h-screen bg-[var(--color-primary-white)] flex items-center justify-center"><Loader2 className="animate-spin text-[var(--color-accent-orange)]" /></div>;
+  if (!user || isCheckingProfile) return <div className="min-h-screen bg-[var(--color-primary-white)] flex items-center justify-center"><Loader2 className="animate-spin text-[var(--color-accent-orange)] w-8 h-8" /></div>;
 
   const isSenior = role === 'senior';
 
