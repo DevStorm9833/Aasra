@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import ProtectedRoute from './components/ProtectedRoute';
 
 // Hooks
 import { useReadMode } from './hooks/useReadMode';
@@ -64,10 +65,10 @@ export default function App() {
           <Routes location={location} key={location.pathname}>
             <Route path="/" element={<ServicesPage />} />
             <Route path="/auth" element={<AuthPage />} />
-            <Route path="/onboarding" element={<OnboardingPage />} />
+            <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
             <Route path="/contact-us" element={<ContactPage />} />
-            <Route path="/senior-hub" element={<SeniorHub />} />
-            <Route path="/volunteer-hub" element={<VolunteerHub />} />
+            <Route path="/senior-hub" element={<ProtectedRoute><SeniorHub /></ProtectedRoute>} />
+            <Route path="/volunteer-hub" element={<ProtectedRoute><VolunteerHub /></ProtectedRoute>} />
           </Routes>
         </AnimatePresence>
       </main>
