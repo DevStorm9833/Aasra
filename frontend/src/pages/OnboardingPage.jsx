@@ -127,19 +127,20 @@ const OnboardingPage = () => {
         additional_info: formData.additional_info
       } : {
         age: formData.age,
+        email: formData.email,
         address: formData.address,
         occupation: formData.occupation
       };
 
       const { error } = await supabase
         .from('profiles')
-        .update({
+        .upsert({
+          id: user.id,
           full_name: formData.full_name,
           phone_number: formData.phone_number,
           role: role,
           location_data: extra_data
-        })
-        .eq('id', user.id);
+        });
 
       if (error) throw error;
 

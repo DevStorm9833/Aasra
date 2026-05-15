@@ -11,7 +11,7 @@ const AuthPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
-  const role = searchParams.get('role') || 'unassigned'; // 'senior' or 'volunteer'
+  const role = searchParams.get('role') || 'senior'; // default to 'senior' if not explicitly passed
 
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
