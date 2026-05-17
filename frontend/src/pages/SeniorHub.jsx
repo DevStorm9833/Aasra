@@ -10,9 +10,10 @@ const subtleJaliPattern = {
 
 const SeniorHub = () => {
   const navigate = useNavigate();
-  const [booking, setBooking] = useState({ date: '', time: '', duration: '', location: 'Home' });
+  const [booking, setBooking] = useState({ date: '', time: '', duration: '', location: 'Home', serviceType: '', helpTasks: ['', ''] });
   const [showFeedback, setShowFeedback] = useState(false);
   const [selectedEmoji, setSelectedEmoji] = useState(null);
+  const [isLocating, setIsLocating] = useState(false);
 
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -62,6 +63,37 @@ const SeniorHub = () => {
     }
   };
 
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser");
+      return;
+    }
+    
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+          const data = await res.json();
+          const address = data.display_name || `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`;
+          setBooking(prev => ({ ...prev, location: address }));
+          alert("Location fetched successfully");
+        } catch (err) {
+          console.error(err);
+          setBooking(prev => ({ ...prev, location: `GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}` }));
+          alert("Location fetched successfully");
+        }
+        setIsLocating(false);
+      },
+      (error) => {
+        console.error("Error getting location: ", error);
+        alert("Unable to retrieve your location. Please enter it manually.");
+        setIsLocating(false);
+      }
+    );
+  };
+
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
     if (!booking.date || !booking.time || !booking.duration) return;
@@ -86,7 +118,7 @@ const SeniorHub = () => {
       }
 
       alert(`Booking Confirmed for ${booking.date} at ${booking.time}. We are matching you with a verified volunteer.`);
-      setBooking({ date: '', time: '', duration: '', location: 'Home' });
+      setBooking({ date: '', time: '', duration: '', location: 'Home', serviceType: '', helpTasks: ['', ''] });
 
       // Simulate session end after 3 seconds for demo purposes
       setTimeout(() => {
@@ -207,19 +239,104 @@ const SeniorHub = () => {
 
               {/* Location */}
               <div className="space-y-2">
-                <label className="text-sm font-bold uppercase tracking-widest text-[var(--color-gray-mid)] ml-2">Location</label>
+                <div className="flex justify-between items-center ml-2 mb-1">
+                  <label className="text-sm font-bold uppercase tracking-widest text-[var(--color-gray-mid)]">Location</label>
+                  <div className="flex gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setBooking({ ...booking, location: 'Home' })}
+                      className="text-xs font-bold text-[var(--color-accent-orange)] uppercase tracking-widest hover:text-[var(--color-accent-saffron)] transition-colors"
+                    >
+                      Saved Address
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleGetLocation}
+                      disabled={isLocating}
+                      className="text-xs font-bold text-[var(--color-accent-orange)] uppercase tracking-widest hover:text-[var(--color-accent-saffron)] transition-colors disabled:opacity-50"
+                    >
+                      {isLocating ? 'Locating...' : 'My Location'}
+                    </button>
+                  </div>
+                </div>
                 <div className="relative">
                   <MapPin className="absolute left-5 top-1/2 transform -translate-y-1/2 text-[var(--color-accent-orange)]" size={20} />
                   <input
                     type="text"
-                    disabled
+                    required
+                    placeholder="Enter location manually or use buttons above"
                     value={booking.location}
-                    className="w-full pl-14 pr-6 py-4 rounded-2xl bg-gray-50 border border-[var(--color-gray-soft)] text-lg font-medium text-[var(--color-gray-mid)] outline-none shadow-sm cursor-not-allowed"
+                    onChange={(e) => setBooking({ ...booking, location: e.target.value })}
+                    className="w-full pl-14 pr-6 py-4 rounded-2xl bg-white border border-[var(--color-gray-soft)] text-lg font-medium text-[var(--color-primary-black)] outline-none focus:border-[var(--color-accent-orange)] focus:ring-2 focus:ring-[var(--color-accent-orange)]/20 shadow-sm transition-all"
                   />
-                  <span className="absolute right-5 top-1/2 transform -translate-y-1/2 text-xs font-bold text-[var(--color-accent-orange)] uppercase tracking-widest">Saved Address</span>
                 </div>
               </div>
 
+            </div>
+
+            {/* Help & Service Type Section */}
+            <div className="flex flex-col md:flex-row gap-8 pt-6 border-t border-[var(--color-gray-soft)]">
+              {/* Help Tasks (Left side) */}
+              <div className="w-full md:w-1/2 space-y-4">
+                <label className="text-sm font-bold uppercase tracking-widest text-[var(--color-gray-mid)] ml-2">Help (What do you need?)</label>
+                {booking.helpTasks.map((task, index) => (
+                  <div key={index} className="flex gap-2 items-center">
+                    <input 
+                      type="text" 
+                      value={task}
+                      placeholder="Type here..."
+                      onChange={(e) => {
+                        const newTasks = [...booking.helpTasks];
+                        newTasks[index] = e.target.value;
+                        setBooking({ ...booking, helpTasks: newTasks });
+                      }}
+                      className="w-full pl-6 pr-6 py-4 rounded-2xl bg-white border border-[var(--color-gray-soft)] text-lg font-medium text-[var(--color-primary-black)] outline-none focus:border-[var(--color-accent-orange)] focus:ring-2 focus:ring-[var(--color-accent-orange)]/20 shadow-sm transition-all"
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        const newTasks = booking.helpTasks.filter((_, i) => i !== index);
+                        setBooking({ ...booking, helpTasks: newTasks });
+                      }}
+                      className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors shrink-0"
+                      title="Delete"
+                    >
+                      <X size={24} />
+                    </button>
+                  </div>
+                ))}
+                <button 
+                  type="button" 
+                  onClick={() => setBooking({ ...booking, helpTasks: [...booking.helpTasks, ''] })}
+                  className="text-sm font-bold text-[var(--color-accent-orange)] uppercase tracking-widest hover:underline ml-2 block transition-colors"
+                >
+                  + Add more
+                </button>
+              </div>
+
+              {/* Service Type (Right side) */}
+              <div className="w-full md:w-1/2 space-y-2">
+                <label className="text-sm font-bold uppercase tracking-widest text-[var(--color-gray-mid)] ml-2">Service Type</label>
+                <div className="relative">
+                  <select
+                    required
+                    value={booking.serviceType}
+                    onChange={(e) => setBooking({ ...booking, serviceType: e.target.value })}
+                    className="w-full pl-6 pr-12 py-4 rounded-2xl bg-white border border-[var(--color-gray-soft)] text-lg font-medium text-[var(--color-primary-black)] outline-none focus:border-[var(--color-accent-orange)] focus:ring-2 focus:ring-[var(--color-accent-orange)]/20 shadow-sm appearance-none cursor-pointer"
+                  >
+                    <option value="" disabled>Select a service</option>
+                    <option value="Companionship">Companionship</option>
+                    <option value="Walking Buddy">Walking Buddy</option>
+                    <option value="Medicine Delivery">Medicine Delivery</option>
+                    <option value="Home Maintainence">Home Maintainence</option>
+                    <option value="Tech Assistance">Tech Assistance</option>
+                    <option value="Doctor Visits">Doctor Visits</option>
+                    <option value="Events & Travel">Events & Travel</option>
+                    <option value="Others">Others</option>
+                  </select>
+                  <ChevronDown className="absolute right-5 top-1/2 transform -translate-y-1/2 text-[var(--color-gray-mid)] pointer-events-none" size={20} />
+                </div>
+              </div>
             </div>
 
             <button
