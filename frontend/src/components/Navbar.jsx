@@ -21,7 +21,7 @@ const Navbar = ({ activePage, setActivePage, openSettings }) => {
 
   const navItems = [
     { name: 'Home', id: '/' },
-    { name: 'Contact Us', id: '/contact-us' }
+    { name: 'About Us', id: '/contact-us' }
   ];
 
   const handleNavClick = (path) => {
