@@ -16,6 +16,7 @@ const VolunteerHub = () => {
 
   // --- NEW LIVE CORE STATES ---
   const [activeRequests, setActiveRequests] = useState([]);
+  const [acceptedRequests, setAcceptedRequests] = useState([]);
   const [stats, setStats] = useState({ sessions: 0, hours: 0, rating: 0 });
   const [isDataLoading, setIsDataLoading] = useState(true);
 
@@ -82,10 +83,41 @@ const VolunteerHub = () => {
           task: `${req.service_type.replace('_', ' ').toUpperCase()}: ${req.description}`,
           distance: "Nearby", 
           time: new Date(req.scheduled_at).toLocaleDateString() + ", " + new Date(req.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          senior_id: req.user_id
+          senior_id: req.user_id,
+          scheduled_at: req.scheduled_at
         }));
         setActiveRequests(formatted);
       }
+
+      // 6. Load accepted requests
+      const { data: acceptedRecords } = await supabase
+        .from('sessions')
+        .select(`
+          id,
+          start_time,
+          duration_hours,
+          status,
+          profiles:senior_id (
+            full_name
+          )
+        `)
+        .eq('volunteer_id', authUser.id)
+        .eq('status', 'active');
+
+      if (acceptedRecords) {
+        const formattedAccepted = acceptedRecords.map(req => ({
+          id: req.id,
+          name: req.profiles?.full_name || "Senior Citizen",
+          age: 70,
+          task: "Companion Session",
+          distance: "Nearby",
+          duration_hours: req.duration_hours || 1,
+          time: new Date(req.start_time).toLocaleDateString() + ", " + new Date(req.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          scheduled_at: req.start_time
+        }));
+        setAcceptedRequests(formattedAccepted);
+      }
+
       setIsDataLoading(false);
 
       // 5. Establish real-time persistent WebSocket connection channel
@@ -110,7 +142,8 @@ const VolunteerHub = () => {
                 task: `${payload.new.service_type.replace('_', ' ').toUpperCase()}: ${payload.new.description}`,
                 distance: "Nearby",
                 time: new Date(payload.new.scheduled_at).toLocaleDateString() + ", " + new Date(payload.new.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                senior_id: payload.new.user_id
+                senior_id: payload.new.user_id,
+                scheduled_at: payload.new.scheduled_at
               };
 
               setActiveRequests((prev) => [incomingCard, ...prev]);
@@ -146,6 +179,27 @@ const VolunteerHub = () => {
   const handleAcceptRequest = async (selectedCard) => {
     if (!user) return;
 
+    // Time conflict validation
+    const newReqStart = new Date(selectedCard.scheduled_at).getTime();
+    const newReqDuration = (selectedCard.duration_hours || 1) * 60 * 60 * 1000;
+    const newReqEnd = newReqStart + newReqDuration;
+    const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+    
+    const hasConflict = acceptedRequests.some(accepted => {
+      const acceptedStart = new Date(accepted.scheduled_at).getTime();
+      const acceptedDuration = (accepted.duration_hours || 1) * 60 * 60 * 1000;
+      const acceptedEnd = acceptedStart + acceptedDuration;
+
+      // Conflict exists if the time gap between them is less than 2 hours
+      // Meaning: (new request starts before accepted ends + 2h) AND (accepted starts before new request ends + 2h)
+      return (newReqStart < acceptedEnd + TWO_HOURS_MS) && (acceptedStart < newReqEnd + TWO_HOURS_MS);
+    });
+
+    if (hasConflict) {
+      alert("⚠️ Time Conflict: You must leave at least a 2-hour gap between the end of one session and the start of another to account for travel time and extensions.");
+      return;
+    }
+
     try {
       // Step A: Update the service request record status to accepted
       const { error: patchError } = await supabase
@@ -162,15 +216,25 @@ const VolunteerHub = () => {
           {
             senior_id: selectedCard.senior_id,
             volunteer_id: user.id,
-            start_time: new Date().toISOString(),
+            start_time: selectedCard.scheduled_at || new Date().toISOString(),
             status: 'active'
           }
         ]);
 
       if (sessionError) throw sessionError;
 
-      // Step C: Remove the row component optimistically from the active state
+      // Step C: Remove the row component optimistically from the active state and add to accepted
       setActiveRequests((prev) => prev.filter(item => item.id !== selectedCard.id));
+      setAcceptedRequests((prev) => [...prev, {
+        id: selectedCard.id, // technically session id in real app, but ok for optimistic UI
+        name: selectedCard.name,
+        age: selectedCard.age,
+        task: selectedCard.task,
+        distance: selectedCard.distance,
+        duration_hours: selectedCard.duration_hours || 1,
+        time: selectedCard.time,
+        scheduled_at: selectedCard.scheduled_at
+      }]);
       alert(`🎯 Request Accepted! You have successfully committed to assist ${selectedCard.name}.`);
 
     } catch (err) {
@@ -273,6 +337,40 @@ const VolunteerHub = () => {
               <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">Badge Locked</span>
             </div>
           </div>
+        </div>
+
+        {/* My Accepted Requests */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-3xl font-black text-[var(--color-primary-black)] font-poppins">Upcoming Commitments</h2>
+          </div>
+
+          {acceptedRequests.length === 0 ? (
+            <div className="bg-white rounded-[2rem] p-12 text-center border border-dashed border-gray-200">
+              <p className="text-gray-500 font-medium text-lg">You don't have any accepted requests right now.</p>
+            </div>
+          ) : (
+            acceptedRequests.map((req, i) => (
+              <div key={i} className="bg-white rounded-[2rem] p-8 border border-green-100 shadow-sm">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                  <div>
+                    <div className="flex items-center gap-4 mb-3">
+                      <h3 className="text-2xl font-bold">{req.name}</h3>
+                      <span className="text-sm font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{req.age || "Senior"} yrs</span>
+                    </div>
+                    <p className="text-lg font-medium text-gray-700 mb-4">{req.task || "Companion Session"}</p>
+                    <div className="flex flex-wrap gap-4 text-sm font-bold text-gray-500 uppercase tracking-wider">
+                      <span className="flex items-center gap-2"><MapPin size={16} className="text-green-600" /> {req.distance || "Nearby"}</span>
+                      <span className="flex items-center gap-2"><Clock size={16} className="text-green-600" /> {req.time}</span>
+                    </div>
+                  </div>
+                  <span className="px-8 py-4 bg-green-50 text-green-700 font-bold uppercase text-sm tracking-widest rounded-full border border-green-200 flex items-center gap-2">
+                    <CheckCircle size={20} /> Confirmed
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
         {/* Active Requests */}

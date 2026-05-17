@@ -61,17 +61,13 @@ const AuthPage = () => {
 
     try {
       const { data, error } = await supabase.auth.verifyOtp({ phone: formattedPhone, token: otp, type: 'sms' });
+      if (error) throw error;
+
       // If success, user is logged in
       navigate(`/onboarding?role=${role}`);
     } catch (error) {
       console.error('OTP Verification Error:', error.message);
-      // Demo fallback logic
-      if (otp === '123456') {
-        alert("Demo Mode: Passing verification. (RLS policies will block data until real Auth is used).");
-        navigate(`/onboarding?role=${role}`);
-      } else {
-        alert("Invalid OTP.");
-      }
+      alert(error.message);
     } finally {
       setIsLoading(false);
     }
