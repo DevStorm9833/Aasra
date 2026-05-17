@@ -73,25 +73,31 @@ const SeniorHub = () => {
       const duration_hours = parseInt(booking.duration.split(' ')[0]) || 1;
 
       if (user) {
-        const { error } = await supabase.from('sessions').insert({
+        // Create session and capture returned row to get session id
+        const { data, error } = await supabase.from('sessions').insert({
           senior_id: user.id,
           start_time,
           duration_hours,
           status: 'pending',
           location_snapshot: { address: booking.location }
-        });
+        }).select().single();
         if (error) throw error;
+
+        // Compute amount (INR) - rate per hour can be adjusted
+        const ratePerHour = 200; // INR 200 per hour
+        const amount = duration_hours * ratePerHour;
+
+        // Navigate to payment page and pass amount + session id
+        navigate('/payment', { state: { amount, sessionId: data.id, booking: { ...booking, start_time, duration_hours } } });
+        return;
       } else {
         console.warn("No user logged in. Simulating DB insert.");
+        alert(`Booking Confirmed for ${booking.date} at ${booking.time}. We are matching you with a verified volunteer.`);
+        setBooking({ date: '', time: '', duration: '', location: 'Home' });
+        setTimeout(() => {
+          setShowFeedback(true);
+        }, 3000);
       }
-
-      alert(`Booking Confirmed for ${booking.date} at ${booking.time}. We are matching you with a verified volunteer.`);
-      setBooking({ date: '', time: '', duration: '', location: 'Home' });
-
-      // Simulate session end after 3 seconds for demo purposes
-      setTimeout(() => {
-        setShowFeedback(true);
-      }, 3000);
 
     } catch (error) {
       console.error("Booking Error:", error);

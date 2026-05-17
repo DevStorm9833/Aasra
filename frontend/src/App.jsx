@@ -17,6 +17,7 @@ import AuthPage from './pages/AuthPage';
 import OnboardingPage from './pages/OnboardingPage';
 import ContactPage from './pages/ContactPage';
 import SeniorHub from './pages/SeniorHub';
+import PaymentPage from './pages/PaymentPage';
 import VolunteerHub from './pages/VolunteerHub';
 
 export default function App() {
@@ -68,6 +69,7 @@ export default function App() {
             <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
             <Route path="/contact-us" element={<ContactPage />} />
             <Route path="/senior-hub" element={<ProtectedRoute><SeniorHub /></ProtectedRoute>} />
+            <Route path="/payment" element={<ProtectedRoute><PaymentPage /></ProtectedRoute>} />
             <Route path="/volunteer-hub" element={<ProtectedRoute><VolunteerHub /></ProtectedRoute>} />
           </Routes>
         </AnimatePresence>
