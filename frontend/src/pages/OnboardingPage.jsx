@@ -68,7 +68,6 @@ const OnboardingPage = () => {
         setFormData(prev => ({ ...prev, age: user.age }));
       }
       if (user.phone) {
-        // user.phone includes country code (e.g., +919876543210), so we extract the last 10 digits
         const phoneDigits = user.phone.replace(/\D/g, '').slice(-10);
         setFormData(prev => ({ ...prev, phone_number: phoneDigits }));
       }
@@ -120,7 +119,7 @@ const OnboardingPage = () => {
       const extra_data = role === 'senior' ? {
         age: formData.age,
         email: formData.email,
-        address: formData.address,
+        address: formData.address,  // This is the saved address
         live_alone: formData.live_alone,
         health_issues: [...formData.health_issues, formData.other_health_issue].filter(Boolean),
         emergency_contacts: formData.has_emergency_contacts ? formData.emergency_contacts : [],
@@ -128,7 +127,7 @@ const OnboardingPage = () => {
       } : {
         age: formData.age,
         email: formData.email,
-        address: formData.address,
+        address: formData.address,  // This is the saved address for volunteers too
         occupation: formData.occupation
       };
 
@@ -139,7 +138,7 @@ const OnboardingPage = () => {
           full_name: formData.full_name,
           phone_number: formData.phone_number,
           role: role,
-          location_data: extra_data
+          location_data: extra_data  // Address is stored here
         });
 
       if (error) throw error;
@@ -200,9 +199,18 @@ const OnboardingPage = () => {
               </div>
             </div>
 
+            {/* Address Field - This will be saved to profile */}
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-widest text-gray-500">Full Address</label>
-              <textarea required rows={2} value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-200 focus:border-[var(--color-accent-orange)] outline-none transition-all" placeholder="Your residential address" />
+              <p className="text-xs text-gray-500 mb-1">This address will be saved and can be used for future bookings</p>
+              <textarea
+                required
+                rows={3}
+                value={formData.address}
+                onChange={e => setFormData({ ...formData, address: e.target.value })}
+                className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-200 focus:border-[var(--color-accent-orange)] outline-none transition-all"
+                placeholder="Your residential address"
+              />
             </div>
 
             {!isSenior && (

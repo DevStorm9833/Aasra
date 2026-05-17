@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, MapPin, Calendar as CalendarIcon, AlertTriangle, Coffee, Check, Star, ChevronDown, Smile, Meh, Frown, X } from 'lucide-react';
+import { Clock, MapPin, Calendar as CalendarIcon, AlertTriangle, Coffee, Check, Star, ChevronDown, Smile, Meh, Frown, X, Heart, Users, Pill, Wrench, Smartphone, Stethoscope, Calendar, Pen, Plus, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
@@ -10,27 +10,51 @@ const subtleJaliPattern = {
 
 const SeniorHub = () => {
   const navigate = useNavigate();
-  const [booking, setBooking] = useState({ date: '', time: '', duration: '', location: 'Home', serviceType: '', helpTasks: ['', ''] });
+  const [booking, setBooking] = useState({
+    date: '',
+    timeHour: '9',
+    timePeriod: 'AM',
+    durationValue: '1',
+    durationUnit: 'hours',
+    location: 'Home',
+    helpRequests: [{ type: 'others', description: '' }]
+  });
   const [showFeedback, setShowFeedback] = useState(false);
   const [selectedEmoji, setSelectedEmoji] = useState(null);
   const [isLocating, setIsLocating] = useState(false);
+  const [locationError, setLocationError] = useState('');
+  const [isLoadingSavedAddress, setIsLoadingSavedAddress] = useState(false);
 
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
-  const [credits, setCredits] = useState(5); // Default to 5
+  const [credits, setCredits] = useState(5);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch User, Profile & Credits on Mount
+  // Help options with icons
+  const helpOptions = [
+    { id: 'companionship', label: 'Companionship', icon: Heart },
+    { id: 'walking', label: 'Walking Buddy', icon: Users },
+    { id: 'medicine', label: 'Medicine Delivery', icon: Pill },
+    { id: 'maintenance', label: 'Home Maintenance', icon: Wrench },
+    { id: 'tech', label: 'Tech Assistance', icon: Smartphone },
+    { id: 'doctor', label: 'Doctor Visits', icon: Stethoscope },
+    { id: 'events', label: 'Events & Travel', icon: Calendar },
+    { id: 'others', label: 'Others', icon: Pen }
+  ];
+
+  // Get today's date
+  const today = new Date().toISOString().split('T')[0];
+  const maxDate = '3000-12-31';
+
+  // Fetch User Data
   React.useEffect(() => {
     const fetchUserData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUser(user);
-
-        // Fetch Profile
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('full_name')
+          .select('full_name, location_data')
           .eq('id', user.id)
           .single();
         if (profileData) setProfile(profileData);
@@ -46,6 +70,40 @@ const SeniorHub = () => {
     };
     fetchUserData();
   }, []);
+
+  // Function to fetch saved address from profile
+  const fetchSavedAddress = async () => {
+    if (!user) return;
+
+    setIsLoadingSavedAddress(true);
+    try {
+      const { data: profileData, error } = await supabase
+        .from('profiles')
+        .select('location_data')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+
+      // Get the address from location_data
+      const savedAddress = profileData?.location_data?.address;
+
+      if (savedAddress && savedAddress !== 'Home') {
+        setBooking(prev => ({ ...prev, location: savedAddress }));
+        alert(`Saved address loaded: ${savedAddress}`);
+      } else if (savedAddress === 'Home') {
+        setBooking(prev => ({ ...prev, location: 'Home' }));
+        alert('Saved address: Home');
+      } else {
+        alert('No saved address found. Please enter your address manually or use "My Location".');
+      }
+    } catch (error) {
+      console.error('Error fetching saved address:', error);
+      alert('Could not fetch saved address. Please try again.');
+    } finally {
+      setIsLoadingSavedAddress(false);
+    }
+  };
 
   const totalSessions = 5;
   const usedSessions = totalSessions - credits;
@@ -63,46 +121,144 @@ const SeniorHub = () => {
     }
   };
 
+  // Geolocation with Google Maps
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
+      setLocationError("Geolocation is not supported by your browser");
       alert("Geolocation is not supported by your browser");
       return;
     }
-    
+
     setIsLocating(true);
+    setLocationError('');
+
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
+
         try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-          const data = await res.json();
-          const address = data.display_name || `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`;
-          setBooking(prev => ({ ...prev, location: address }));
-          alert("Location fetched successfully");
-        } catch (err) {
-          console.error(err);
-          setBooking(prev => ({ ...prev, location: `GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}` }));
-          alert("Location fetched successfully");
+          const apiKey = 'YOUR_GOOGLE_MAPS_API_KEY'; // Replace with your actual API key
+          const response = await fetch(
+            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
+          );
+
+          const data = await response.json();
+
+          if (data.status === 'OK' && data.results && data.results.length > 0) {
+            const formattedAddress = data.results[0].formatted_address;
+            setBooking(prev => ({ ...prev, location: formattedAddress }));
+            alert(`Location found: ${formattedAddress}`);
+          } else {
+            const fallbackAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+            setBooking(prev => ({ ...prev, location: fallbackAddress }));
+            alert(`Location captured (coordinates: ${fallbackAddress}). Please verify.`);
+          }
+        } catch (error) {
+          console.error("Geocoding Error:", error);
+          const fallbackAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+          setBooking(prev => ({ ...prev, location: fallbackAddress }));
+          alert(`Location captured (coordinates: ${fallbackAddress}). Please verify.`);
+        } finally {
+          setIsLocating(false);
         }
-        setIsLocating(false);
       },
       (error) => {
-        console.error("Error getting location: ", error);
-        alert("Unable to retrieve your location. Please enter it manually.");
+        let errorMessage = "Unable to retrieve location. Please enter manually.";
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = "Location permission denied. Please enable location access and try again.";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = "Location information unavailable. Please enter manually.";
+            break;
+          case error.TIMEOUT:
+            errorMessage = "Location request timed out. Please try again.";
+            break;
+        }
+        setLocationError(errorMessage);
+        alert(errorMessage);
         setIsLocating(false);
-      }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
+  };
+
+  // Handle help option selection for a specific request
+  const handleHelpOptionSelect = (index, optionId) => {
+    const newRequests = [...booking.helpRequests];
+    newRequests[index].type = optionId;
+    setBooking({ ...booking, helpRequests: newRequests });
+  };
+
+  // Update description for a specific request
+  const updateDescription = (index, description) => {
+    const newRequests = [...booking.helpRequests];
+    newRequests[index].description = description;
+    setBooking({ ...booking, helpRequests: newRequests });
+  };
+
+  // Add new help request (max 5)
+  const addHelpRequest = () => {
+    if (booking.helpRequests.length < 5) {
+      setBooking({
+        ...booking,
+        helpRequests: [...booking.helpRequests, { type: 'others', description: '' }]
+      });
+    } else {
+      alert("Maximum 5 help requests allowed per booking");
+    }
+  };
+
+  // Delete help request
+  const deleteHelpRequest = (index) => {
+    if (booking.helpRequests.length > 1) {
+      const newRequests = booking.helpRequests.filter((_, i) => i !== index);
+      setBooking({ ...booking, helpRequests: newRequests });
+    }
+  };
+
+  // Get the label for a help option
+  const getHelpLabel = (typeId) => {
+    const option = helpOptions.find(opt => opt.id === typeId);
+    return option ? option.label : 'Others';
+  };
+
+  // Format display time
+  const formatDisplayTime = () => `${booking.timeHour}:00 ${booking.timePeriod}`;
+
+  // Calculate total hours
+  const calculateTotalHours = () => {
+    const value = parseInt(booking.durationValue);
+    if (booking.durationUnit === 'hours') return Math.min(value, 24);
+    return Math.min(value, 30) * 24;
   };
 
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
-    if (!booking.date || !booking.time || !booking.duration) return;
+    if (!booking.date || !booking.timeHour || !booking.timePeriod || !booking.durationValue) {
+      alert("Please fill in date, time, and duration");
+      return;
+    }
+
+    const hasValidTask = booking.helpRequests.some(task => task.description.trim());
+    if (!hasValidTask) {
+      alert("Please describe what help you need");
+      return;
+    }
 
     setIsLoading(true);
     try {
-      // Combine date and time to TIMESTAMPTZ
-      const start_time = new Date(`${booking.date} ${booking.time}`).toISOString();
-      const duration_hours = parseInt(booking.duration.split(' ')[0]) || 1;
+      const timeString = `${booking.timeHour}:00 ${booking.timePeriod}`;
+      const start_time = new Date(`${booking.date} ${timeString}`).toISOString();
+      const duration_hours = calculateTotalHours();
+
+      const formattedHelpRequests = booking.helpRequests
+        .filter(task => task.description.trim())
+        .map(task => ({
+          type: task.type,
+          typeLabel: getHelpLabel(task.type),
+          description: task.description
+        }));
 
       if (user) {
         const { error } = await supabase.from('sessions').insert({
@@ -110,24 +266,28 @@ const SeniorHub = () => {
           start_time,
           duration_hours,
           status: 'pending',
-          location_snapshot: { address: booking.location }
+          location_snapshot: { address: booking.location },
+          help_requests: formattedHelpRequests
         });
         if (error) throw error;
-      } else {
-        console.warn("No user logged in. Simulating DB insert.");
       }
 
-      alert(`Booking Confirmed for ${booking.date} at ${booking.time}. We are matching you with a verified volunteer.`);
-      setBooking({ date: '', time: '', duration: '', location: 'Home', serviceType: '', helpTasks: ['', ''] });
+      alert(`✅ Booking Confirmed!\n📅 Date: ${booking.date}\n⏰ Time: ${formatDisplayTime()}\n⏱️ Duration: ${booking.durationValue} ${booking.durationUnit}`);
 
-      // Simulate session end after 3 seconds for demo purposes
-      setTimeout(() => {
-        setShowFeedback(true);
-      }, 3000);
+      setBooking({
+        date: '',
+        timeHour: '9',
+        timePeriod: 'AM',
+        durationValue: '1',
+        durationUnit: 'hours',
+        location: 'Home',
+        helpRequests: [{ type: 'others', description: '' }]
+      });
 
+      setTimeout(() => setShowFeedback(true), 3000);
     } catch (error) {
       console.error("Booking Error:", error);
-      alert("Failed to create booking.");
+      alert("Failed to create booking. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -144,7 +304,6 @@ const SeniorHub = () => {
     <div className="min-h-screen bg-[var(--color-primary-white)] text-[var(--color-primary-black)] pb-32 font-inter relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none mix-blend-multiply opacity-50" style={subtleJaliPattern}></div>
 
-      {/* Custom Senior Navbar */}
       <nav className="bg-white/80 backdrop-blur-md text-[var(--color-primary-black)] p-6 md:px-12 border-b border-[var(--color-gray-soft)] flex justify-between items-center relative z-20">
         <div>
           <h1 className="text-3xl font-black font-poppins tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-[var(--color-accent-orange)] to-[var(--color-accent-saffron)]">
@@ -158,7 +317,6 @@ const SeniorHub = () => {
       </nav>
 
       <div className="max-w-5xl mx-auto p-6 mt-12 relative z-10">
-
         {/* Wallet Component */}
         <div className="bg-white/60 backdrop-blur-3xl rounded-[2.5rem] p-10 shadow-xl shadow-[var(--color-primary-black)]/5 border border-white/50 mb-12">
           <h2 className="text-2xl font-black mb-2 flex items-center gap-3 text-[var(--color-primary-black)] font-poppins">
@@ -181,7 +339,6 @@ const SeniorHub = () => {
 
           <form onSubmit={handleBookingSubmit} className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-
               {/* Date Picker */}
               <div className="space-y-2">
                 <label className="text-sm font-bold uppercase tracking-widest text-[var(--color-gray-mid)] ml-2">Select Date</label>
@@ -190,50 +347,90 @@ const SeniorHub = () => {
                   <input
                     type="date"
                     required
+                    min={today}
+                    max={maxDate}
                     value={booking.date}
                     onChange={(e) => setBooking({ ...booking, date: e.target.value })}
                     className="w-full pl-14 pr-6 py-4 rounded-2xl bg-white border border-[var(--color-gray-soft)] text-lg font-medium text-[var(--color-primary-black)] outline-none focus:border-[var(--color-accent-orange)] focus:ring-2 focus:ring-[var(--color-accent-orange)]/20 shadow-sm appearance-none cursor-pointer"
                   />
                 </div>
+                <p className="text-xs text-gray-500 ml-2">Available from today onwards</p>
               </div>
 
-              {/* Time Dropdown */}
+              {/* Time Picker */}
               <div className="space-y-2">
                 <label className="text-sm font-bold uppercase tracking-widest text-[var(--color-gray-mid)] ml-2">Select Time</label>
-                <div className="relative">
-                  <Clock className="absolute left-5 top-1/2 transform -translate-y-1/2 text-[var(--color-gray-mid)]" size={20} />
-                  <select
-                    required
-                    value={booking.time}
-                    onChange={(e) => setBooking({ ...booking, time: e.target.value })}
-                    className="w-full pl-14 pr-12 py-4 rounded-2xl bg-white border border-[var(--color-gray-soft)] text-lg font-medium text-[var(--color-primary-black)] outline-none focus:border-[var(--color-accent-orange)] focus:ring-2 focus:ring-[var(--color-accent-orange)]/20 shadow-sm appearance-none cursor-pointer"
-                  >
-                    <option value="" disabled>Choose preferred time</option>
-                    <option value="09:00 AM">Morning (09:00 AM)</option>
-                    <option value="12:00 PM">Noon (12:00 PM)</option>
-                    <option value="03:00 PM">Afternoon (03:00 PM)</option>
-                    <option value="06:00 PM">Evening (06:00 PM)</option>
-                  </select>
-                  <ChevronDown className="absolute right-5 top-1/2 transform -translate-y-1/2 text-[var(--color-gray-mid)] pointer-events-none" size={20} />
+                <div className="flex gap-3">
+                  <div className="relative flex-1">
+                    <Clock className="absolute left-5 top-1/2 transform -translate-y-1/2 text-[var(--color-gray-mid)]" size={20} />
+                    <select
+                      required
+                      value={booking.timeHour}
+                      onChange={(e) => setBooking({ ...booking, timeHour: e.target.value })}
+                      className="w-full pl-14 pr-12 py-4 rounded-2xl bg-white border border-[var(--color-gray-soft)] text-lg font-medium text-[var(--color-primary-black)] outline-none focus:border-[var(--color-accent-orange)] focus:ring-2 focus:ring-[var(--color-accent-orange)]/20 shadow-sm appearance-none cursor-pointer"
+                    >
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(hour => (
+                        <option key={hour} value={hour}>{hour}:00</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-5 top-1/2 transform -translate-y-1/2 text-[var(--color-gray-mid)] pointer-events-none" size={20} />
+                  </div>
+
+                  <div className="relative flex-1">
+                    <select
+                      required
+                      value={booking.timePeriod}
+                      onChange={(e) => setBooking({ ...booking, timePeriod: e.target.value })}
+                      className="w-full px-6 py-4 rounded-2xl bg-white border border-[var(--color-gray-soft)] text-lg font-medium text-[var(--color-primary-black)] outline-none focus:border-[var(--color-accent-orange)] focus:ring-2 focus:ring-[var(--color-accent-orange)]/20 shadow-sm appearance-none cursor-pointer"
+                    >
+                      <option value="AM">AM</option>
+                      <option value="PM">PM</option>
+                    </select>
+                    <ChevronDown className="absolute right-5 top-1/2 transform -translate-y-1/2 text-[var(--color-gray-mid)] pointer-events-none" size={20} />
+                  </div>
                 </div>
               </div>
 
-              {/* Duration Dropdown */}
+              {/* Duration Picker */}
               <div className="space-y-2">
                 <label className="text-sm font-bold uppercase tracking-widest text-[var(--color-gray-mid)] ml-2">Duration</label>
-                <div className="relative">
-                  <select
-                    required
-                    value={booking.duration}
-                    onChange={(e) => setBooking({ ...booking, duration: e.target.value })}
-                    className="w-full pl-6 pr-12 py-4 rounded-2xl bg-white border border-[var(--color-gray-soft)] text-lg font-medium text-[var(--color-primary-black)] outline-none focus:border-[var(--color-accent-orange)] focus:ring-2 focus:ring-[var(--color-accent-orange)]/20 shadow-sm appearance-none cursor-pointer"
-                  >
-                    <option value="" disabled>How long?</option>
-                    <option value="1 Hour">1 Hour</option>
-                    <option value="2 Hours">2 Hours</option>
-                    <option value="3 Hours">3 Hours</option>
-                  </select>
-                  <ChevronDown className="absolute right-5 top-1/2 transform -translate-y-1/2 text-[var(--color-gray-mid)] pointer-events-none" size={20} />
+                <div className="flex gap-3">
+                  <div className="relative flex-1">
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      max={booking.durationUnit === 'hours' ? 24 : 30}
+                      value={booking.durationValue}
+                      onChange={(e) => {
+                        let val = parseInt(e.target.value);
+                        const max = booking.durationUnit === 'hours' ? 24 : 30;
+                        if (val > max) val = max;
+                        if (val < 1) val = 1;
+                        setBooking({ ...booking, durationValue: val.toString() });
+                      }}
+                      className="w-full px-6 py-4 rounded-2xl bg-white border border-[var(--color-gray-soft)] text-lg font-medium text-[var(--color-primary-black)] outline-none focus:border-[var(--color-accent-orange)] focus:ring-2 focus:ring-[var(--color-accent-orange)]/20 shadow-sm"
+                    />
+                  </div>
+
+                  <div className="relative flex-1">
+                    <select
+                      required
+                      value={booking.durationUnit}
+                      onChange={(e) => {
+                        const newUnit = e.target.value;
+                        let newValue = booking.durationValue;
+                        const max = newUnit === 'hours' ? 24 : 30;
+                        if (parseInt(newValue) > max) newValue = max.toString();
+                        setBooking({ ...booking, durationUnit: newUnit, durationValue: newValue });
+                      }}
+                      className="w-full px-6 py-4 rounded-2xl bg-white border border-[var(--color-gray-soft)] text-lg font-medium text-[var(--color-primary-black)] outline-none focus:border-[var(--color-accent-orange)] focus:ring-2 focus:ring-[var(--color-accent-orange)]/20 shadow-sm appearance-none cursor-pointer"
+                    >
+                      <option value="hours">Hours (max 24)</option>
+                      <option value="days">Days (max 30)</option>
+                    </select>
+                    <ChevronDown className="absolute right-5 top-1/2 transform -translate-y-1/2 text-[var(--color-gray-mid)] pointer-events-none" size={20} />
+                  </div>
                 </div>
               </div>
 
@@ -242,19 +439,10 @@ const SeniorHub = () => {
                 <div className="flex justify-between items-center ml-2 mb-1">
                   <label className="text-sm font-bold uppercase tracking-widest text-[var(--color-gray-mid)]">Location</label>
                   <div className="flex gap-4">
-                    <button
-                      type="button"
-                      onClick={() => setBooking({ ...booking, location: 'Home' })}
-                      className="text-xs font-bold text-[var(--color-accent-orange)] uppercase tracking-widest hover:text-[var(--color-accent-saffron)] transition-colors"
-                    >
-                      Saved Address
+                    <button type="button" onClick={fetchSavedAddress} disabled={isLoadingSavedAddress} className="text-xs font-bold text-[var(--color-accent-orange)] uppercase tracking-widest hover:text-[var(--color-accent-saffron)] transition-colors disabled:opacity-50">
+                      {isLoadingSavedAddress ? 'Loading...' : 'Saved Address'}
                     </button>
-                    <button
-                      type="button"
-                      onClick={handleGetLocation}
-                      disabled={isLocating}
-                      className="text-xs font-bold text-[var(--color-accent-orange)] uppercase tracking-widest hover:text-[var(--color-accent-saffron)] transition-colors disabled:opacity-50"
-                    >
+                    <button type="button" onClick={handleGetLocation} disabled={isLocating} className="text-xs font-bold text-[var(--color-accent-orange)] uppercase tracking-widest hover:text-[var(--color-accent-saffron)] transition-colors disabled:opacity-50">
                       {isLocating ? 'Locating...' : 'My Location'}
                     </button>
                   </div>
@@ -264,79 +452,93 @@ const SeniorHub = () => {
                   <input
                     type="text"
                     required
-                    placeholder="Enter location manually or use buttons above"
+                    placeholder="Enter location manually or use 'My Location' button"
                     value={booking.location}
                     onChange={(e) => setBooking({ ...booking, location: e.target.value })}
                     className="w-full pl-14 pr-6 py-4 rounded-2xl bg-white border border-[var(--color-gray-soft)] text-lg font-medium text-[var(--color-primary-black)] outline-none focus:border-[var(--color-accent-orange)] focus:ring-2 focus:ring-[var(--color-accent-orange)]/20 shadow-sm transition-all"
                   />
                 </div>
+                {locationError && <p className="text-xs text-red-500 ml-2 mt-1">{locationError}</p>}
               </div>
-
             </div>
 
-            {/* Help & Service Type Section */}
-            <div className="flex flex-col md:flex-row gap-8 pt-6 border-t border-[var(--color-gray-soft)]">
-              {/* Help Tasks (Left side) */}
-              <div className="w-full md:w-1/2 space-y-4">
-                <label className="text-sm font-bold uppercase tracking-widest text-[var(--color-gray-mid)] ml-2">Help (What do you need?)</label>
-                {booking.helpTasks.map((task, index) => (
-                  <div key={index} className="flex gap-2 items-center">
-                    <input 
-                      type="text" 
-                      value={task}
-                      placeholder="Type here..."
-                      onChange={(e) => {
-                        const newTasks = [...booking.helpTasks];
-                        newTasks[index] = e.target.value;
-                        setBooking({ ...booking, helpTasks: newTasks });
-                      }}
-                      className="w-full pl-6 pr-6 py-4 rounded-2xl bg-white border border-[var(--color-gray-soft)] text-lg font-medium text-[var(--color-primary-black)] outline-none focus:border-[var(--color-accent-orange)] focus:ring-2 focus:ring-[var(--color-accent-orange)]/20 shadow-sm transition-all"
-                    />
-                    <button 
-                      type="button"
-                      onClick={() => {
-                        const newTasks = booking.helpTasks.filter((_, i) => i !== index);
-                        setBooking({ ...booking, helpTasks: newTasks });
-                      }}
-                      className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors shrink-0"
-                      title="Delete"
-                    >
-                      <X size={24} />
-                    </button>
-                  </div>
-                ))}
-                <button 
-                  type="button" 
-                  onClick={() => setBooking({ ...booking, helpTasks: [...booking.helpTasks, ''] })}
-                  className="text-sm font-bold text-[var(--color-accent-orange)] uppercase tracking-widest hover:underline ml-2 block transition-colors"
-                >
-                  + Add more
-                </button>
-              </div>
+            {/* Help Section - Multiple Requests */}
+            <div className="pt-6 border-t border-[var(--color-gray-soft)]">
+              <label className="text-sm font-bold uppercase tracking-widest text-[var(--color-gray-mid)] ml-2 mb-4 block">
+                What help do you need?
+              </label>
 
-              {/* Service Type (Right side) */}
-              <div className="w-full md:w-1/2 space-y-2">
-                <label className="text-sm font-bold uppercase tracking-widest text-[var(--color-gray-mid)] ml-2">Service Type</label>
-                <div className="relative">
-                  <select
-                    required
-                    value={booking.serviceType}
-                    onChange={(e) => setBooking({ ...booking, serviceType: e.target.value })}
-                    className="w-full pl-6 pr-12 py-4 rounded-2xl bg-white border border-[var(--color-gray-soft)] text-lg font-medium text-[var(--color-primary-black)] outline-none focus:border-[var(--color-accent-orange)] focus:ring-2 focus:ring-[var(--color-accent-orange)]/20 shadow-sm appearance-none cursor-pointer"
-                  >
-                    <option value="" disabled>Select a service</option>
-                    <option value="Companionship">Companionship</option>
-                    <option value="Walking Buddy">Walking Buddy</option>
-                    <option value="Medicine Delivery">Medicine Delivery</option>
-                    <option value="Home Maintainence">Home Maintainence</option>
-                    <option value="Tech Assistance">Tech Assistance</option>
-                    <option value="Doctor Visits">Doctor Visits</option>
-                    <option value="Events & Travel">Events & Travel</option>
-                    <option value="Others">Others</option>
-                  </select>
-                  <ChevronDown className="absolute right-5 top-1/2 transform -translate-y-1/2 text-[var(--color-gray-mid)] pointer-events-none" size={20} />
+              {booking.helpRequests.map((request, index) => (
+                <div key={index} className="mb-8 last:mb-0">
+                  {/* Help Options Buttons - Horizontal Scrollable */}
+                  <div className="overflow-x-auto pb-4 mb-4">
+                    <div className="flex gap-3 min-w-max">
+                      {helpOptions.map((option) => {
+                        const OptionIcon = option.icon;
+                        const isSelected = request.type === option.id;
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            onClick={() => handleHelpOptionSelect(index, option.id)}
+                            className={`flex items-center gap-2 px-5 py-3 rounded-full transition-all whitespace-nowrap border-2 ${isSelected
+                              ? 'border-[var(--color-accent-orange)] text-[var(--color-accent-orange)] bg-orange-50/50'
+                              : 'border-gray-300 text-black hover:border-[var(--color-accent-orange)] hover:text-[var(--color-accent-orange)]'
+                              }`}
+                          >
+                            <OptionIcon size={20} />
+                            <span className="font-medium">{option.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Text Box with Dynamic Label */}
+                  <div className="relative">
+                    <div className="absolute -top-3 left-4 bg-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-[var(--color-accent-orange)] border border-[var(--color-gray-soft)] z-10">
+                      {getHelpLabel(request.type)}
+                    </div>
+                    <div className="flex gap-3">
+                      <textarea
+                        rows="3"
+                        value={request.description}
+                        onChange={(e) => updateDescription(index, e.target.value)}
+                        placeholder={request.type !== 'others'
+                          ? `Tell us more about your ${getHelpLabel(request.type).toLowerCase()} request...`
+                          : "Please describe what help you need..."}
+                        className="flex-1 px-6 pt-8 pb-4 rounded-2xl bg-white border-2 border-[var(--color-gray-soft)] text-lg font-medium text-[var(--color-primary-black)] outline-none focus:border-[var(--color-accent-orange)] focus:ring-2 focus:ring-[var(--color-accent-orange)]/20 shadow-sm transition-all resize-y"
+                      />
+                      {booking.helpRequests.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => deleteHelpRequest(index)}
+                          className="p-4 text-red-500 hover:bg-red-50 rounded-xl transition-colors self-start mt-2"
+                          title="Remove this request"
+                        >
+                          <Trash2 size={24} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ))}
+
+              {/* Add More Button - Max 5 */}
+              {booking.helpRequests.length < 5 && (
+                <button
+                  type="button"
+                  onClick={addHelpRequest}
+                  className="mt-4 flex items-center gap-2 text-sm font-bold text-[var(--color-accent-orange)] uppercase tracking-widest hover:underline transition-colors"
+                >
+                  <Plus size={18} />
+                  Add another help request ({booking.helpRequests.length}/5)
+                </button>
+              )}
+
+              <p className="text-xs text-gray-500 mt-4 ml-2">
+                💡 Tip: Be specific about your needs (e.g., "Need help with morning medicines at 8 AM")
+              </p>
             </div>
 
             <button
@@ -350,7 +552,7 @@ const SeniorHub = () => {
         </div>
       </div>
 
-      {/* Persistent SOS Button */}
+      {/* SOS Button */}
       <button
         onClick={handleSOS}
         className="fixed bottom-8 right-8 w-24 h-24 bg-red-600 text-white rounded-full shadow-[0_8px_30px_rgba(220,38,38,0.4)] flex flex-col items-center justify-center hover:bg-red-700 hover:scale-105 active:scale-95 transition-all z-40 border-[6px] border-white/50 group"
@@ -359,7 +561,7 @@ const SeniorHub = () => {
         <span className="font-bold text-[10px] uppercase tracking-widest">SOS</span>
       </button>
 
-      {/* Emoji Feedback Modal */}
+      {/* Feedback Modal */}
       <AnimatePresence>
         {showFeedback && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -370,60 +572,38 @@ const SeniorHub = () => {
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
+              animate={{ opacity: 1, scale: 1, y: 20 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="bg-white/90 backdrop-blur-xl p-10 md:p-14 rounded-[3rem] shadow-2xl max-w-lg w-full relative z-10 border border-white/50"
             >
-              <button
-                onClick={() => setShowFeedback(false)}
-                className="absolute top-6 right-6 p-2 text-gray-400 hover:text-gray-800 transition-colors bg-gray-100 hover:bg-gray-200 rounded-full"
-              >
+              <button onClick={() => setShowFeedback(false)} className="absolute top-6 right-6 p-2 text-gray-400 hover:text-gray-800 transition-colors bg-gray-100 hover:bg-gray-200 rounded-full">
                 <X size={24} />
               </button>
-
               <div className="text-center mb-10">
                 <h2 className="text-3xl font-black text-[var(--color-primary-black)] font-poppins mb-4">How was your session?</h2>
                 <p className="text-[var(--color-gray-mid)] font-medium">Your feedback helps us keep the community safe and supportive.</p>
               </div>
-
               <div className="flex justify-between items-center mb-12 gap-4">
-                <button
-                  onClick={() => setSelectedEmoji('happy')}
-                  className={`flex flex-col items-center gap-3 p-6 rounded-[2rem] transition-all border-4 ${selectedEmoji === 'happy' ? 'bg-green-50 border-green-500 text-green-600 scale-110 shadow-lg' : 'bg-gray-50 border-transparent text-gray-400 hover:bg-gray-100 hover:scale-105'}`}
-                >
-                  <Smile size={64} strokeWidth={selectedEmoji === 'happy' ? 2.5 : 2} />
+                <button onClick={() => setSelectedEmoji('happy')} className={`flex flex-col items-center gap-3 p-6 rounded-[2rem] transition-all border-4 ${selectedEmoji === 'happy' ? 'bg-green-50 border-green-500 text-green-600 scale-110 shadow-lg' : 'bg-gray-50 border-transparent text-gray-400 hover:bg-gray-100 hover:scale-105'}`}>
+                  <Smile size={64} />
                   <span className="font-bold text-sm uppercase tracking-widest">Great</span>
                 </button>
-
-                <button
-                  onClick={() => setSelectedEmoji('neutral')}
-                  className={`flex flex-col items-center gap-3 p-6 rounded-[2rem] transition-all border-4 ${selectedEmoji === 'neutral' ? 'bg-orange-50 border-orange-500 text-orange-600 scale-110 shadow-lg' : 'bg-gray-50 border-transparent text-gray-400 hover:bg-gray-100 hover:scale-105'}`}
-                >
-                  <Meh size={64} strokeWidth={selectedEmoji === 'neutral' ? 2.5 : 2} />
+                <button onClick={() => setSelectedEmoji('neutral')} className={`flex flex-col items-center gap-3 p-6 rounded-[2rem] transition-all border-4 ${selectedEmoji === 'neutral' ? 'bg-orange-50 border-orange-500 text-orange-600 scale-110 shadow-lg' : 'bg-gray-50 border-transparent text-gray-400 hover:bg-gray-100 hover:scale-105'}`}>
+                  <Meh size={64} />
                   <span className="font-bold text-sm uppercase tracking-widest">Okay</span>
                 </button>
-
-                <button
-                  onClick={() => setSelectedEmoji('sad')}
-                  className={`flex flex-col items-center gap-3 p-6 rounded-[2rem] transition-all border-4 ${selectedEmoji === 'sad' ? 'bg-red-50 border-red-500 text-red-600 scale-110 shadow-lg' : 'bg-gray-50 border-transparent text-gray-400 hover:bg-gray-100 hover:scale-105'}`}
-                >
-                  <Frown size={64} strokeWidth={selectedEmoji === 'sad' ? 2.5 : 2} />
+                <button onClick={() => setSelectedEmoji('sad')} className={`flex flex-col items-center gap-3 p-6 rounded-[2rem] transition-all border-4 ${selectedEmoji === 'sad' ? 'bg-red-50 border-red-500 text-red-600 scale-110 shadow-lg' : 'bg-gray-50 border-transparent text-gray-400 hover:bg-gray-100 hover:scale-105'}`}>
+                  <Frown size={64} />
                   <span className="font-bold text-sm uppercase tracking-widest">Poor</span>
                 </button>
               </div>
-
-              <button
-                onClick={handleFeedbackSubmit}
-                disabled={!selectedEmoji}
-                className="w-full py-5 bg-[var(--color-primary-black)] text-white font-bold uppercase tracking-widest rounded-full shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-              >
+              <button onClick={handleFeedbackSubmit} disabled={!selectedEmoji} className="w-full py-5 bg-[var(--color-primary-black)] text-white font-bold uppercase tracking-widest rounded-full shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                 Submit Feedback
               </button>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
-
     </div>
   );
 };
