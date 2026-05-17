@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, CheckCircle, ShieldCheck, MapPin, Clock, Award, Star, AlertTriangle } from 'lucide-react';
+import { Upload, CheckCircle, ShieldCheck, MapPin, Clock, Award, Star, AlertTriangle, Loader2 } from 'lucide-react';
 
 import { supabase } from '../lib/supabase';
 
@@ -14,26 +14,127 @@ const VolunteerHub = () => {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
 
-  React.useEffect(() => {
-    const fetchUserData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUser(user);
+  // --- NEW LIVE CORE STATES ---
+  const [activeRequests, setActiveRequests] = useState([]);
+  const [stats, setStats] = useState({ sessions: 0, hours: 0, rating: 0 });
+  const [isDataLoading, setIsDataLoading] = useState(true);
 
-        // Fetch Profile
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .single();
-        if (profileData) setProfile(profileData);
+  useEffect(() => {
+    const initializeDashboardData = async () => {
+      // 1. Get Logged-In User Credentials
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) {
+        setIsDataLoading(false);
+        return;
       }
+      setUser(authUser);
+
+      // 2. Fetch Profile details and average rating metrics
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('full_name, rating_avg')
+        .eq('id', authUser.id)
+        .single();
+      
+      if (profileData) {
+        setProfile(profileData);
+      }
+
+      // 3. Aggregate historical session contribution numbers
+      const { data: sessionsData } = await supabase
+        .from('sessions')
+        .select('duration_hours')
+        .eq('volunteer_id', authUser.id)
+        .eq('status', 'completed');
+
+      if (sessionsData) {
+        const totalSessions = sessionsData.length;
+        const totalHours = sessionsData.reduce((acc, curr) => acc + (curr.duration_hours || 0), 0);
+        setStats({
+          sessions: totalSessions,
+          hours: totalHours,
+          rating: profileData?.rating_avg || 0
+        });
+      }
+
+      // 4. Load initial pending senior assistance requests
+      const { data: requestRecords } = await supabase
+        .from('service_requests')
+        .select(`
+          id,
+          description,
+          service_type,
+          scheduled_at,
+          manual_address,
+          user_id,
+          profiles:user_id (
+            full_name
+          )
+        `)
+        .eq('status', 'pending');
+
+      if (requestRecords) {
+        // Transform backend payload to align with your card layouts
+        const formatted = requestRecords.map(req => ({
+          id: req.id,
+          name: req.profiles?.full_name || "Senior Citizen",
+          age: 70, // Fallback layout standard
+          task: `${req.service_type.replace('_', ' ').toUpperCase()}: ${req.description}`,
+          distance: "Nearby", 
+          time: new Date(req.scheduled_at).toLocaleDateString() + ", " + new Date(req.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          senior_id: req.user_id
+        }));
+        setActiveRequests(formatted);
+      }
+      setIsDataLoading(false);
+
+      // 5. Establish real-time persistent WebSocket connection channel
+      const realtimeChannel = supabase
+        .channel('public-requests-feed')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'service_requests' },
+          async (payload) => {
+            if (payload.eventType === 'INSERT' && payload.new.status === 'pending') {
+              // Fetch profile metadata for the new request to ensure full display name mapping
+              const { data: requesterProfile } = await supabase
+                .from('profiles')
+                .select('full_name')
+                .eq('id', payload.new.user_id)
+                .single();
+
+              const incomingCard = {
+                id: payload.new.id,
+                name: requesterProfile?.full_name || "Senior Citizen",
+                age: 70,
+                task: `${payload.new.service_type.replace('_', ' ').toUpperCase()}: ${payload.new.description}`,
+                distance: "Nearby",
+                time: new Date(payload.new.scheduled_at).toLocaleDateString() + ", " + new Date(payload.new.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                senior_id: payload.new.user_id
+              };
+
+              setActiveRequests((prev) => [incomingCard, ...prev]);
+            } else if (payload.eventType === 'UPDATE') {
+              if (payload.new.status !== 'pending') {
+                // If claimed or updated out of pending, clear from visibility array
+                setActiveRequests((prev) => prev.filter(r => r.id !== payload.new.id));
+              }
+            } else if (payload.eventType === 'DELETE') {
+              setActiveRequests((prev) => prev.filter(r => r.id !== payload.old.id));
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(realtimeChannel);
+      };
     };
-    fetchUserData();
+
+    initializeDashboardData();
   }, []);
 
   const handleIDUpload = () => {
-    // Simulate upload delay
     setVerificationStatus('uploaded');
     setTimeout(() => {
       setVerificationStatus('verified');
@@ -41,10 +142,51 @@ const VolunteerHub = () => {
     }, 2000);
   };
 
-  const activeRequests = [
-    { id: 1, name: "Mr. Sharma", age: 72, task: "Grocery Shopping", distance: "1.2 km", time: "Tomorrow, 10:00 AM" },
-    { id: 2, name: "Mrs. Desai", age: 68, task: "Tech Support (Phone Setup)", distance: "2.5 km", time: "Today, 4:00 PM" }
-  ];
+  // --- REAL-TIME TRANSACTION ASSIGNMENT ---
+  const handleAcceptRequest = async (selectedCard) => {
+    if (!user) return;
+
+    try {
+      // Step A: Update the service request record status to accepted
+      const { error: patchError } = await supabase
+        .from('service_requests')
+        .update({ status: 'accepted' })
+        .eq('id', selectedCard.id);
+
+      if (patchError) throw patchError;
+
+      // Step B: Initialize a corresponding action log row inside the sessions layout table
+      const { error: sessionError } = await supabase
+        .from('sessions')
+        .insert([
+          {
+            senior_id: selectedCard.senior_id,
+            volunteer_id: user.id,
+            start_time: new Date().toISOString(),
+            status: 'active'
+          }
+        ]);
+
+      if (sessionError) throw sessionError;
+
+      // Step C: Remove the row component optimistically from the active state
+      setActiveRequests((prev) => prev.filter(item => item.id !== selectedCard.id));
+      alert(`🎯 Request Accepted! You have successfully committed to assist ${selectedCard.name}.`);
+
+    } catch (err) {
+      console.error("Failed executing assignment transaction:", err.message);
+      alert("Could not claim this request. It might have been updated or picked up by another volunteer.");
+    }
+  };
+
+  if (isDataLoading) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center text-gray-700 font-inter">
+        <Loader2 className="w-10 h-10 animate-spin text-green-600 mb-4" />
+        <p className="text-sm font-bold tracking-widest uppercase text-gray-400">Syncing Aasra Hub...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[var(--color-primary-white)] text-[var(--color-primary-black)] pb-32 font-inter relative overflow-hidden">
@@ -104,22 +246,27 @@ const VolunteerHub = () => {
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div className="bg-white p-6 rounded-3xl border border-gray-100 flex flex-col items-center justify-center text-center shadow-sm">
-              <span className="text-4xl font-black text-green-600 mb-2">0</span>
+              <span className="text-4xl font-black text-green-600 mb-2">{stats.sessions}</span>
               <span className="text-xs font-bold uppercase tracking-widest text-gray-500">Sessions</span>
             </div>
             <div className="bg-white p-6 rounded-3xl border border-gray-100 flex flex-col items-center justify-center text-center shadow-sm">
-              <span className="text-4xl font-black text-green-600 mb-2">0</span>
+              <span className="text-4xl font-black text-green-600 mb-2">{stats.hours}</span>
               <span className="text-xs font-bold uppercase tracking-widest text-gray-500">Hours</span>
             </div>
             <div className="bg-white p-6 rounded-3xl border border-gray-100 flex flex-col items-center justify-center text-center shadow-sm">
               <div className="flex text-amber-400 mb-2">
-                <Star size={24} fill="currentColor" className="opacity-30" />
-                <Star size={24} fill="currentColor" className="opacity-30" />
-                <Star size={24} fill="currentColor" className="opacity-30" />
-                <Star size={24} fill="currentColor" className="opacity-30" />
-                <Star size={24} fill="currentColor" className="opacity-30" />
+                {[...Array(5)].map((_, i) => (
+                  <Star 
+                    key={i} 
+                    size={24} 
+                    fill="currentColor" 
+                    className={i < Math.round(stats.rating) ? "opacity-100" : "opacity-30"} 
+                  />
+                ))}
               </div>
-              <span className="text-xs font-bold uppercase tracking-widest text-gray-500">Rating</span>
+              <span className="text-xs font-bold uppercase tracking-widest text-gray-500">
+                Rating {stats.rating > 0 ? `(${stats.rating.toFixed(1)})` : ''}
+              </span>
             </div>
             <div className="bg-gradient-to-br from-gray-200 to-gray-300 p-6 rounded-3xl flex flex-col items-center justify-center text-center shadow-inner text-gray-500 border border-gray-300 border-dashed">
               <ShieldCheck size={32} className="mb-2 opacity-50" />
@@ -132,30 +279,46 @@ const VolunteerHub = () => {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-3xl font-black text-[var(--color-primary-black)] font-poppins">Local Requests</h2>
-            {verificationStatus !== 'verified' && (
-              <span className="text-xs font-bold text-orange-600 bg-orange-100 px-4 py-2 rounded-full uppercase tracking-widest">Verification Required</span>
-            )}
-          </div>
-          {activeRequests.map((req) => (
-            <div key={req.id} className={`bg-white rounded-[2rem] p-8 border ${verificationStatus === 'verified' ? 'border-green-100 shadow-sm hover:shadow-md transition-shadow' : 'border-gray-200 opacity-60 pointer-events-none filter grayscale'}`}>
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                <div>
-                  <div className="flex items-center gap-4 mb-3">
-                    <h3 className="text-2xl font-bold">{req.name}</h3>
-                    <span className="text-sm font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{req.age} yrs</span>
-                  </div>
-                  <p className="text-lg font-medium text-gray-700 mb-4">{req.task}</p>
-                  <div className="flex flex-wrap gap-4 text-sm font-bold text-gray-500 uppercase tracking-wider">
-                    <span className="flex items-center gap-2"><MapPin size={16} className="text-green-600" /> {req.distance}</span>
-                    <span className="flex items-center gap-2"><Clock size={16} className="text-green-600" /> {req.time}</span>
-                  </div>
-                </div>
-                <button className="w-full md:w-auto px-10 py-4 bg-green-600 text-white font-bold uppercase text-sm tracking-widest rounded-full hover:bg-green-700 transition-colors shadow-md hover:shadow-lg">
-                  Accept Request
-                </button>
-              </div>
+            <div className="flex items-center gap-3">
+              <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full font-bold text-xs uppercase tracking-wider animate-pulse">
+                ● Live Updates Active
+              </span>
+              {verificationStatus !== 'verified' && (
+                <span className="text-xs font-bold text-orange-600 bg-orange-100 px-4 py-2 rounded-full uppercase tracking-widest">Verification Required</span>
+              )}
             </div>
-          ))}
+          </div>
+
+          {activeRequests.length === 0 ? (
+            <div className="bg-white rounded-[2rem] p-12 text-center border border-dashed border-gray-200">
+              <p className="text-gray-500 font-medium text-lg">No open helper requests found right now.</p>
+              <p className="text-xs text-gray-400 mt-2">New postings submitted by senior citizens will populate here in real-time.</p>
+            </div>
+          ) : (
+            activeRequests.map((req) => (
+              <div key={req.id} className={`bg-white rounded-[2rem] p-8 border ${verificationStatus === 'verified' ? 'border-green-100 shadow-sm hover:shadow-md transition-shadow' : 'border-gray-200 opacity-60 pointer-events-none filter grayscale'}`}>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                  <div>
+                    <div className="flex items-center gap-4 mb-3">
+                      <h3 className="text-2xl font-bold">{req.name}</h3>
+                      <span className="text-sm font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{req.age} yrs</span>
+                    </div>
+                    <p className="text-lg font-medium text-gray-700 mb-4">{req.task}</p>
+                    <div className="flex flex-wrap gap-4 text-sm font-bold text-gray-500 uppercase tracking-wider">
+                      <span className="flex items-center gap-2"><MapPin size={16} className="text-green-600" /> {req.distance}</span>
+                      <span className="flex items-center gap-2"><Clock size={16} className="text-green-600" /> {req.time}</span>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => handleAcceptRequest(req)}
+                    className="w-full md:w-auto px-10 py-4 bg-green-600 text-white font-bold uppercase text-sm tracking-widest rounded-full hover:bg-green-700 transition-colors shadow-md hover:shadow-lg cursor-pointer"
+                  >
+                    Accept Request
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
       </div>
