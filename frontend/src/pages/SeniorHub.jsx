@@ -339,7 +339,8 @@ const SeniorHub = () => {
           service_type: serviceType,
           description: serviceDescription,
           scheduled_at: start_time,
-          manual_address: booking.location
+          manual_address: booking.location,
+          location_mode: 'manual'
         }).select('id').single();
 
         if (error) throw error;
