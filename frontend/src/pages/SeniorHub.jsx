@@ -233,6 +233,63 @@ const SeniorHub = () => {
     return Math.min(value, 30) * 24;
   };
 
+  const loadRazorpayScript = () => {
+    return new Promise((resolve, reject) => {
+      if (document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]')) {
+        resolve(true);
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => reject(new Error('Failed to load Razorpay checkout script.'));
+      document.body.appendChild(script);
+    });
+  };
+
+  const openRazorpayCheckout = async (requestId, amountInPaise, description) => {
+    const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
+    if (!razorpayKey) {
+      throw new Error('Missing Razorpay publishable key. Please set VITE_RAZORPAY_KEY_ID in .env.local');
+    }
+
+    const loaded = await loadRazorpayScript();
+    if (!loaded) {
+      throw new Error('Unable to load Razorpay checkout.');
+    }
+
+    return new Promise((resolve, reject) => {
+      const options = {
+        key: razorpayKey,
+        amount: amountInPaise,
+        currency: 'INR',
+        name: 'Aasra Care',
+        description,
+        notes: {
+          booking_request_id: requestId || 'unknown'
+        },
+        handler: function (response) {
+          resolve(response);
+        },
+        modal: {
+          escape: true,
+          ondismiss: function () {
+            reject(new Error('Payment was cancelled.'));
+          }
+        },
+        prefill: {
+          name: profile?.full_name || '',
+          email: user?.email || '',
+          contact: profile?.phone_number || ''
+        }
+      };
+
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
+    });
+  };
+
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
     if (!booking.date || !booking.timeHour || !booking.timePeriod || !booking.durationValue) {
@@ -248,8 +305,17 @@ const SeniorHub = () => {
 
     setIsLoading(true);
     try {
-      const timeString = `${booking.timeHour}:00 ${booking.timePeriod}`;
-      const start_time = new Date(`${booking.date} ${timeString}`).toISOString();
+      const hour = parseInt(booking.timeHour, 10);
+      const hour24 = booking.timePeriod === 'PM'
+        ? (hour === 12 ? 12 : hour + 12)
+        : (hour === 12 ? 0 : hour);
+      const paddedHour = hour24.toString().padStart(2, '0');
+      const startTimeIso = `${booking.date}T${paddedHour}:00:00`;
+      const startDate = new Date(startTimeIso);
+      if (Number.isNaN(startDate.getTime())) {
+        throw new Error(`Invalid booking date/time: ${startTimeIso}`);
+      }
+      const start_time = startDate.toISOString();
       const duration_hours = calculateTotalHours();
 
       const formattedHelpRequests = booking.helpRequests
@@ -260,19 +326,32 @@ const SeniorHub = () => {
           description: task.description
         }));
 
+      const serviceDescription = formattedHelpRequests
+        .map(req => `${req.typeLabel}: ${req.description}`)
+        .join(' | ');
+      const serviceType = formattedHelpRequests[0]?.type || 'others';
+
+      let requestId = null;
       if (user) {
-        const { error } = await supabase.from('sessions').insert({
-          senior_id: user.id,
-          start_time,
-          duration_hours,
+        const { data, error } = await supabase.from('service_requests').insert({
+          user_id: user.id,
           status: 'pending',
-          location_snapshot: { address: booking.location },
-          help_requests: formattedHelpRequests
-        });
+          service_type: serviceType,
+          description: serviceDescription,
+          scheduled_at: start_time,
+          manual_address: booking.location
+        }).select('id').single();
+
         if (error) throw error;
+        requestId = data?.id;
       }
 
-      alert(`✅ Booking Confirmed!\n📅 Date: ${booking.date}\n⏰ Time: ${formatDisplayTime()}\n⏱️ Duration: ${booking.durationValue} ${booking.durationUnit}`);
+      const amountInPaise = calculateTotalHours() * 100 * 100;
+      const paymentDescription = `Aasra service booking for ${booking.durationValue} ${booking.durationUnit}`;
+
+      alert('✅ Booking requested successfully. You will now be redirected to Razorpay to complete payment.');
+      await openRazorpayCheckout(requestId, amountInPaise, paymentDescription);
+      alert('✅ Payment complete! Your booking is confirmed.');
 
       setBooking({
         date: '',
@@ -287,7 +366,7 @@ const SeniorHub = () => {
       setTimeout(() => setShowFeedback(true), 3000);
     } catch (error) {
       console.error("Booking Error:", error);
-      alert("Failed to create booking. Please try again.");
+      alert(`Failed to create booking. ${error?.message || 'Please try again.'}`);
     } finally {
       setIsLoading(false);
     }
@@ -546,7 +625,7 @@ const SeniorHub = () => {
               disabled={isLoading}
               className="w-full md:w-auto px-12 py-5 bg-gradient-to-r from-[var(--color-accent-orange)] to-[var(--color-accent-saffron)] text-white text-sm font-bold uppercase tracking-widest rounded-full shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all mt-8 disabled:opacity-50 disabled:scale-100"
             >
-              {isLoading ? 'Confirming...' : 'Confirm Booking'}
+              {isLoading ? 'Processing...' : 'Confirm & Pay'}
             </button>
           </form>
         </div>
