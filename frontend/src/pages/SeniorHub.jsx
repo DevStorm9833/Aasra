@@ -229,8 +229,7 @@ const SeniorHub = () => {
   // Calculate total hours
   const calculateTotalHours = () => {
     const value = parseInt(booking.durationValue);
-    if (booking.durationUnit === 'hours') return Math.min(value, 24);
-    return Math.min(value, 30) * 24;
+    return Math.min(value, 6);
   };
 
   const loadRazorpayScript = () => {
@@ -449,9 +448,14 @@ const SeniorHub = () => {
                       onChange={(e) => setBooking({ ...booking, timeHour: e.target.value })}
                       className="w-full pl-14 pr-12 py-4 rounded-2xl bg-white border border-[var(--color-gray-soft)] text-lg font-medium text-[var(--color-primary-black)] outline-none focus:border-[var(--color-accent-orange)] focus:ring-2 focus:ring-[var(--color-accent-orange)]/20 shadow-sm appearance-none cursor-pointer"
                     >
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(hour => (
-                        <option key={hour} value={hour}>{hour}:00</option>
-                      ))}
+                      {booking.timePeriod === 'AM' 
+                        ? [6, 7, 8, 9, 10, 11].map(hour => (
+                            <option key={hour} value={hour}>{hour}:00</option>
+                          ))
+                        : [12, 1, 2, 3, 4, 5, 6].map(hour => (
+                            <option key={hour} value={hour}>{hour}:00</option>
+                          ))
+                      }
                     </select>
                     <ChevronDown className="absolute right-5 top-1/2 transform -translate-y-1/2 text-[var(--color-gray-mid)] pointer-events-none" size={20} />
                   </div>
@@ -460,7 +464,11 @@ const SeniorHub = () => {
                     <select
                       required
                       value={booking.timePeriod}
-                      onChange={(e) => setBooking({ ...booking, timePeriod: e.target.value })}
+                      onChange={(e) => {
+                        const newPeriod = e.target.value;
+                        const validHour = newPeriod === 'AM' ? '9' : '12';
+                        setBooking({ ...booking, timePeriod: newPeriod, timeHour: validHour });
+                      }}
                       className="w-full px-6 py-4 rounded-2xl bg-white border border-[var(--color-gray-soft)] text-lg font-medium text-[var(--color-primary-black)] outline-none focus:border-[var(--color-accent-orange)] focus:ring-2 focus:ring-[var(--color-accent-orange)]/20 shadow-sm appearance-none cursor-pointer"
                     >
                       <option value="AM">AM</option>
@@ -473,44 +481,20 @@ const SeniorHub = () => {
 
               {/* Duration Picker */}
               <div className="space-y-2">
-                <label className="text-sm font-bold uppercase tracking-widest text-[var(--color-gray-mid)] ml-2">Duration</label>
-                <div className="flex gap-3">
-                  <div className="relative flex-1">
-                    <input
-                      type="number"
-                      required
-                      min="1"
-                      max={booking.durationUnit === 'hours' ? 24 : 30}
-                      value={booking.durationValue}
-                      onChange={(e) => {
-                        let val = parseInt(e.target.value);
-                        const max = booking.durationUnit === 'hours' ? 24 : 30;
-                        if (val > max) val = max;
-                        if (val < 1) val = 1;
-                        setBooking({ ...booking, durationValue: val.toString() });
-                      }}
-                      className="w-full px-6 py-4 rounded-2xl bg-white border border-[var(--color-gray-soft)] text-lg font-medium text-[var(--color-primary-black)] outline-none focus:border-[var(--color-accent-orange)] focus:ring-2 focus:ring-[var(--color-accent-orange)]/20 shadow-sm"
-                    />
-                  </div>
-
-                  <div className="relative flex-1">
-                    <select
-                      required
-                      value={booking.durationUnit}
-                      onChange={(e) => {
-                        const newUnit = e.target.value;
-                        let newValue = booking.durationValue;
-                        const max = newUnit === 'hours' ? 24 : 30;
-                        if (parseInt(newValue) > max) newValue = max.toString();
-                        setBooking({ ...booking, durationUnit: newUnit, durationValue: newValue });
-                      }}
-                      className="w-full px-6 py-4 rounded-2xl bg-white border border-[var(--color-gray-soft)] text-lg font-medium text-[var(--color-primary-black)] outline-none focus:border-[var(--color-accent-orange)] focus:ring-2 focus:ring-[var(--color-accent-orange)]/20 shadow-sm appearance-none cursor-pointer"
-                    >
-                      <option value="hours">Hours (max 24)</option>
-                      <option value="days">Days (max 30)</option>
-                    </select>
-                    <ChevronDown className="absolute right-5 top-1/2 transform -translate-y-1/2 text-[var(--color-gray-mid)] pointer-events-none" size={20} />
-                  </div>
+                <label className="text-sm font-bold uppercase tracking-widest text-[var(--color-gray-mid)] ml-2">Duration (Hours)</label>
+                <div className="relative">
+                  <Clock className="absolute left-5 top-1/2 transform -translate-y-1/2 text-[var(--color-gray-mid)]" size={20} />
+                  <select
+                    required
+                    value={booking.durationValue}
+                    onChange={(e) => setBooking({ ...booking, durationValue: e.target.value })}
+                    className="w-full pl-14 pr-12 py-4 rounded-2xl bg-white border border-[var(--color-gray-soft)] text-lg font-medium text-[var(--color-primary-black)] outline-none focus:border-[var(--color-accent-orange)] focus:ring-2 focus:ring-[var(--color-accent-orange)]/20 shadow-sm appearance-none cursor-pointer"
+                  >
+                    {[1, 2, 3, 4, 5, 6].map(h => (
+                      <option key={h} value={h}>{h} {h === 1 ? 'Hour' : 'Hours'}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-5 top-1/2 transform -translate-y-1/2 text-[var(--color-gray-mid)] pointer-events-none" size={20} />
                 </div>
               </div>
 
