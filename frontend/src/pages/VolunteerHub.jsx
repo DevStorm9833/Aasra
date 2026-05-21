@@ -17,6 +17,7 @@ const VolunteerHub = () => {
   // --- NEW LIVE CORE STATES ---
   const [activeRequests, setActiveRequests] = useState([]);
   const [acceptedRequests, setAcceptedRequests] = useState([]);
+  const [processingId, setProcessingId] = useState(null);
   const [stats, setStats] = useState({ sessions: 0, hours: 0, rating: 0 });
   const [isDataLoading, setIsDataLoading] = useState(true);
 
@@ -59,7 +60,7 @@ const VolunteerHub = () => {
       }
 
       // 4. Load initial pending senior assistance requests
-      const { data: requestRecords } = await supabase
+      const { data: requestRecords, error: requestError } = await supabase
         .from('service_requests')
         .select(`
           id,
@@ -67,21 +68,36 @@ const VolunteerHub = () => {
           service_type,
           scheduled_at,
           manual_address,
-          user_id,
-          profiles:user_id (
-            full_name
-          )
+          user_id
         `)
         .eq('status', 'pending');
 
-      if (requestRecords) {
+      if (requestError) {
+        console.error("Error fetching service requests:", requestError);
+      }
+
+      if (requestRecords && requestRecords.length > 0) {
+        // Manually fetch profiles to avoid foreign key relation errors
+        const userIds = [...new Set(requestRecords.map(req => req.user_id))];
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', userIds);
+          
+        const profileMap = {};
+        if (profilesData) {
+          profilesData.forEach(p => {
+            profileMap[p.id] = p.full_name;
+          });
+        }
+
         // Transform backend payload to align with your card layouts
         const formatted = requestRecords.map(req => ({
           id: req.id,
-          name: req.profiles?.full_name || "Senior Citizen",
+          name: profileMap[req.user_id] || "Senior Citizen",
           age: 70, // Fallback layout standard
           task: `${req.service_type.replace('_', ' ').toUpperCase()}: ${req.description}`,
-          distance: "Nearby", 
+          distance: req.manual_address || "Nearby", 
           time: new Date(req.scheduled_at).toLocaleDateString() + ", " + new Date(req.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           senior_id: req.user_id,
           scheduled_at: req.scheduled_at
@@ -90,24 +106,40 @@ const VolunteerHub = () => {
       }
 
       // 6. Load accepted requests
-      const { data: acceptedRecords } = await supabase
+      const { data: acceptedRecords, error: acceptedError } = await supabase
         .from('sessions')
         .select(`
           id,
           start_time,
           duration_hours,
           status,
-          profiles:senior_id (
-            full_name
-          )
+          senior_id
         `)
         .eq('volunteer_id', authUser.id)
         .eq('status', 'active');
 
-      if (acceptedRecords) {
+      if (acceptedError) {
+        console.error("Error fetching accepted sessions:", acceptedError);
+      }
+
+      if (acceptedRecords && acceptedRecords.length > 0) {
+        // Manually fetch profiles
+        const seniorIds = [...new Set(acceptedRecords.map(req => req.senior_id))];
+        const { data: seniorProfiles } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', seniorIds);
+          
+        const seniorProfileMap = {};
+        if (seniorProfiles) {
+          seniorProfiles.forEach(p => {
+            seniorProfileMap[p.id] = p.full_name;
+          });
+        }
+
         const formattedAccepted = acceptedRecords.map(req => ({
           id: req.id,
-          name: req.profiles?.full_name || "Senior Citizen",
+          name: seniorProfileMap[req.senior_id] || "Senior Citizen",
           age: 70,
           task: "Companion Session",
           distance: "Nearby",
@@ -128,7 +160,7 @@ const VolunteerHub = () => {
           { event: '*', schema: 'public', table: 'service_requests' },
           async (payload) => {
             if (payload.eventType === 'INSERT' && payload.new.status === 'pending') {
-              // Fetch profile metadata for the new request to ensure full display name mapping
+              // Manually fetch profile for incoming request
               const { data: requesterProfile } = await supabase
                 .from('profiles')
                 .select('full_name')
@@ -140,7 +172,7 @@ const VolunteerHub = () => {
                 name: requesterProfile?.full_name || "Senior Citizen",
                 age: 70,
                 task: `${payload.new.service_type.replace('_', ' ').toUpperCase()}: ${payload.new.description}`,
-                distance: "Nearby",
+                distance: payload.new.manual_address || "Nearby",
                 time: new Date(payload.new.scheduled_at).toLocaleDateString() + ", " + new Date(payload.new.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 senior_id: payload.new.user_id,
                 scheduled_at: payload.new.scheduled_at
@@ -201,6 +233,8 @@ const VolunteerHub = () => {
     }
 
     try {
+      setProcessingId(selectedCard.id);
+
       // Step A: Update the service request record status to accepted
       const { error: patchError } = await supabase
         .from('service_requests')
@@ -217,6 +251,7 @@ const VolunteerHub = () => {
             senior_id: selectedCard.senior_id,
             volunteer_id: user.id,
             start_time: selectedCard.scheduled_at || new Date().toISOString(),
+            duration_hours: selectedCard.duration_hours || 1,
             status: 'active'
           }
         ]);
@@ -239,7 +274,9 @@ const VolunteerHub = () => {
 
     } catch (err) {
       console.error("Failed executing assignment transaction:", err.message);
-      alert("Could not claim this request. It might have been updated or picked up by another volunteer.");
+      alert(`Could not claim this request: ${err.message}`);
+    } finally {
+      setProcessingId(null);
     }
   };
 
@@ -409,9 +446,10 @@ const VolunteerHub = () => {
                   </div>
                   <button 
                     onClick={() => handleAcceptRequest(req)}
-                    className="w-full md:w-auto px-10 py-4 bg-green-600 text-white font-bold uppercase text-sm tracking-widest rounded-full hover:bg-green-700 transition-colors shadow-md hover:shadow-lg cursor-pointer"
+                    disabled={processingId === req.id}
+                    className="w-full md:w-auto px-10 py-4 bg-green-600 text-white font-bold uppercase text-sm tracking-widest rounded-full hover:bg-green-700 transition-colors shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Accept Request
+                    {processingId === req.id ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Accept Request'}
                   </button>
                 </div>
               </div>
