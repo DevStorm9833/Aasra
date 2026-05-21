@@ -116,7 +116,7 @@ const VolunteerHub = () => {
           senior_id
         `)
         .eq('volunteer_id', authUser.id)
-        .eq('status', 'active');
+        .eq('status', 'confirmed');
 
       if (acceptedError) {
         console.error("Error fetching accepted sessions:", acceptedError);
@@ -252,7 +252,7 @@ const VolunteerHub = () => {
             volunteer_id: user.id,
             start_time: selectedCard.scheduled_at || new Date().toISOString(),
             duration_hours: selectedCard.duration_hours || 1,
-            status: 'active'
+            status: 'confirmed'
           }
         ]);
 
