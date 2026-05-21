@@ -294,11 +294,11 @@ const VolunteerHub = () => {
       <div className="absolute inset-0 pointer-events-none mix-blend-multiply opacity-50" style={subtleJaliPattern}></div>
 
       {/* Volunteer Navbar */}
-      <nav className="bg-white/80 backdrop-blur-md p-6 md:px-12 border-b border-[var(--color-gray-soft)] flex justify-between items-center relative z-20">
-        <div className="flex items-center gap-3">
-          <ShieldCheck size={32} className="text-green-600" />
+      <nav className="bg-white/80 backdrop-blur-md p-4 md:p-6 md:px-12 border-b border-[var(--color-gray-soft)] flex flex-col md:flex-row justify-between items-center gap-4 relative z-20">
+        <div className="flex items-center gap-3 text-center md:text-left">
+          <ShieldCheck size={32} className="text-green-600 hidden md:block" />
           <div>
-            <h1 className="text-3xl font-black font-poppins tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-green-500">
+            <h1 className="text-2xl md:text-3xl font-black font-poppins tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-green-500">
               Volunteer Hub
             </h1>
             {profile && <p className="text-sm font-bold text-gray-500 mt-1">Hello, {profile.full_name}</p>}
@@ -341,45 +341,45 @@ const VolunteerHub = () => {
 
         {/* Reputation & Badges Section */}
         <div className="bg-white/60 backdrop-blur-3xl rounded-[2.5rem] p-10 shadow-xl shadow-[var(--color-primary-black)]/5 border border-white/50">
-          <h2 className="text-2xl font-black mb-8 flex items-center gap-3 text-[var(--color-primary-black)] font-poppins">
+          <h2 className="text-2xl font-black mb-8 flex items-center justify-center md:justify-start gap-3 text-[var(--color-primary-black)] font-poppins">
             <Award className="text-green-600" size={28} />
             My Reputation
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="bg-white p-6 rounded-3xl border border-gray-100 flex flex-col items-center justify-center text-center shadow-sm">
-              <span className="text-4xl font-black text-green-600 mb-2">{stats.sessions}</span>
-              <span className="text-xs font-bold uppercase tracking-widest text-gray-500">Sessions</span>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            <div className="bg-white p-4 md:p-6 rounded-3xl border border-gray-100 flex flex-col items-center justify-center text-center shadow-sm">
+              <span className="text-3xl md:text-4xl font-black text-green-600 mb-2">{stats.sessions}</span>
+              <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-gray-500">Sessions</span>
             </div>
-            <div className="bg-white p-6 rounded-3xl border border-gray-100 flex flex-col items-center justify-center text-center shadow-sm">
-              <span className="text-4xl font-black text-green-600 mb-2">{stats.hours}</span>
-              <span className="text-xs font-bold uppercase tracking-widest text-gray-500">Hours</span>
+            <div className="bg-white p-4 md:p-6 rounded-3xl border border-gray-100 flex flex-col items-center justify-center text-center shadow-sm">
+              <span className="text-3xl md:text-4xl font-black text-green-600 mb-2">{stats.hours}</span>
+              <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-gray-500">Hours</span>
             </div>
-            <div className="bg-white p-6 rounded-3xl border border-gray-100 flex flex-col items-center justify-center text-center shadow-sm">
+            <div className="bg-white p-4 md:p-6 rounded-3xl border border-gray-100 flex flex-col items-center justify-center text-center shadow-sm">
               <div className="flex text-amber-400 mb-2">
                 {[...Array(5)].map((_, i) => (
                   <Star 
                     key={i} 
-                    size={24} 
+                    size={16} 
                     fill="currentColor" 
-                    className={i < Math.round(stats.rating) ? "opacity-100" : "opacity-30"} 
+                    className={`md:w-6 md:h-6 ${i < Math.round(stats.rating) ? "opacity-100" : "opacity-30"}`}
                   />
                 ))}
               </div>
-              <span className="text-xs font-bold uppercase tracking-widest text-gray-500">
+              <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-gray-500">
                 Rating {stats.rating > 0 ? `(${stats.rating.toFixed(1)})` : ''}
               </span>
             </div>
-            <div className="bg-gradient-to-br from-gray-200 to-gray-300 p-6 rounded-3xl flex flex-col items-center justify-center text-center shadow-inner text-gray-500 border border-gray-300 border-dashed">
-              <ShieldCheck size={32} className="mb-2 opacity-50" />
-              <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">Badge Locked</span>
+            <div className="bg-gradient-to-br from-gray-200 to-gray-300 p-4 md:p-6 rounded-3xl flex flex-col items-center justify-center text-center shadow-inner text-gray-500 border border-gray-300 border-dashed">
+              <ShieldCheck size={24} className="md:w-8 md:h-8 mb-2 opacity-50" />
+              <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest opacity-70">Badge Locked</span>
             </div>
           </div>
         </div>
 
         {/* My Accepted Requests */}
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-3xl font-black text-[var(--color-primary-black)] font-poppins">Upcoming Commitments</h2>
+          <div className="flex flex-col sm:flex-row items-center justify-between text-center sm:text-left gap-4">
+            <h2 className="text-2xl md:text-3xl font-black text-[var(--color-primary-black)] font-poppins">Upcoming Commitments</h2>
           </div>
 
           {acceptedRequests.length === 0 ? (
@@ -391,17 +391,17 @@ const VolunteerHub = () => {
               <div key={i} className="bg-white rounded-[2rem] p-8 border border-green-100 shadow-sm">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                   <div>
-                    <div className="flex items-center gap-4 mb-3">
-                      <h3 className="text-2xl font-bold">{req.name}</h3>
-                      <span className="text-sm font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{req.age || "Senior"} yrs</span>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 mb-3">
+                      <h3 className="text-xl md:text-2xl font-bold">{req.name}</h3>
+                      <span className="text-xs md:text-sm font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{req.age || "Senior"} yrs</span>
                     </div>
-                    <p className="text-lg font-medium text-gray-700 mb-4">{req.task || "Companion Session"}</p>
-                    <div className="flex flex-wrap gap-4 text-sm font-bold text-gray-500 uppercase tracking-wider">
-                      <span className="flex items-center gap-2"><MapPin size={16} className="text-green-600" /> {req.distance || "Nearby"}</span>
-                      <span className="flex items-center gap-2"><Clock size={16} className="text-green-600" /> {req.time}</span>
+                    <p className="text-base md:text-lg font-medium text-gray-700 mb-4">{req.task || "Companion Session"}</p>
+                    <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-4 text-xs md:text-sm font-bold text-gray-500 uppercase tracking-wider">
+                      <span className="flex items-center gap-2"><MapPin size={16} className="text-green-600 shrink-0" /> <span className="truncate max-w-[200px] sm:max-w-xs">{req.distance || "Nearby"}</span></span>
+                      <span className="flex items-center gap-2"><Clock size={16} className="text-green-600 shrink-0" /> {req.time}</span>
                     </div>
                   </div>
-                  <span className="px-8 py-4 bg-green-50 text-green-700 font-bold uppercase text-sm tracking-widest rounded-full border border-green-200 flex items-center gap-2">
+                  <span className="w-full md:w-auto px-6 md:px-8 py-3 md:py-4 bg-green-50 text-green-700 font-bold uppercase text-xs md:text-sm tracking-widest rounded-full border border-green-200 flex items-center justify-center gap-2 shrink-0">
                     <CheckCircle size={20} /> Confirmed
                   </span>
                 </div>
@@ -412,14 +412,14 @@ const VolunteerHub = () => {
 
         {/* Active Requests */}
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-3xl font-black text-[var(--color-primary-black)] font-poppins">Local Requests</h2>
-            <div className="flex items-center gap-3">
-              <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full font-bold text-xs uppercase tracking-wider animate-pulse">
-                ● Live Updates Active
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+            <h2 className="text-2xl md:text-3xl font-black text-[var(--color-primary-black)] font-poppins">Local Requests</h2>
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full font-bold text-[10px] sm:text-xs uppercase tracking-wider animate-pulse whitespace-nowrap">
+                ● Live Updates
               </span>
               {verificationStatus !== 'verified' && (
-                <span className="text-xs font-bold text-orange-600 bg-orange-100 px-4 py-2 rounded-full uppercase tracking-widest">Verification Required</span>
+                <span className="text-[10px] sm:text-xs font-bold text-orange-600 bg-orange-100 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full uppercase tracking-widest whitespace-nowrap">Verification Required</span>
               )}
             </div>
           </div>
@@ -433,21 +433,21 @@ const VolunteerHub = () => {
             activeRequests.map((req) => (
               <div key={req.id} className={`bg-white rounded-[2rem] p-8 border ${verificationStatus === 'verified' ? 'border-green-100 shadow-sm hover:shadow-md transition-shadow' : 'border-gray-200 opacity-60 pointer-events-none filter grayscale'}`}>
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                  <div>
-                    <div className="flex items-center gap-4 mb-3">
-                      <h3 className="text-2xl font-bold">{req.name}</h3>
-                      <span className="text-sm font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{req.age} yrs</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 mb-3">
+                      <h3 className="text-xl md:text-2xl font-bold truncate w-full">{req.name}</h3>
+                      <span className="text-xs md:text-sm font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full shrink-0">{req.age} yrs</span>
                     </div>
-                    <p className="text-lg font-medium text-gray-700 mb-4">{req.task}</p>
-                    <div className="flex flex-wrap gap-4 text-sm font-bold text-gray-500 uppercase tracking-wider">
-                      <span className="flex items-center gap-2"><MapPin size={16} className="text-green-600" /> {req.distance}</span>
-                      <span className="flex items-center gap-2"><Clock size={16} className="text-green-600" /> {req.time}</span>
+                    <p className="text-base md:text-lg font-medium text-gray-700 mb-4">{req.task}</p>
+                    <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-4 text-xs md:text-sm font-bold text-gray-500 uppercase tracking-wider">
+                      <span className="flex items-center gap-2"><MapPin size={16} className="text-green-600 shrink-0" /> <span className="truncate max-w-[200px] sm:max-w-xs">{req.distance}</span></span>
+                      <span className="flex items-center gap-2"><Clock size={16} className="text-green-600 shrink-0" /> {req.time}</span>
                     </div>
                   </div>
                   <button 
                     onClick={() => handleAcceptRequest(req)}
                     disabled={processingId === req.id}
-                    className="w-full md:w-auto px-10 py-4 bg-green-600 text-white font-bold uppercase text-sm tracking-widest rounded-full hover:bg-green-700 transition-colors shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full md:w-auto px-6 md:px-10 py-3 md:py-4 bg-green-600 text-white font-bold uppercase text-xs md:text-sm tracking-widest rounded-full hover:bg-green-700 transition-colors shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                   >
                     {processingId === req.id ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Accept Request'}
                   </button>

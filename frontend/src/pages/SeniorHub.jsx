@@ -383,9 +383,9 @@ const SeniorHub = () => {
     <div className="min-h-screen bg-[var(--color-primary-white)] text-[var(--color-primary-black)] pb-32 font-inter relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none mix-blend-multiply opacity-50" style={subtleJaliPattern}></div>
 
-      <nav className="bg-white/80 backdrop-blur-md text-[var(--color-primary-black)] p-6 md:px-12 border-b border-[var(--color-gray-soft)] flex justify-between items-center relative z-20">
-        <div>
-          <h1 className="text-3xl font-black font-poppins tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-[var(--color-accent-orange)] to-[var(--color-accent-saffron)]">
+      <nav className="bg-white/80 backdrop-blur-md text-[var(--color-primary-black)] p-4 md:p-6 md:px-12 border-b border-[var(--color-gray-soft)] flex flex-col md:flex-row justify-between items-center gap-4 relative z-20">
+        <div className="text-center md:text-left">
+          <h1 className="text-2xl md:text-3xl font-black font-poppins tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-[var(--color-accent-orange)] to-[var(--color-accent-saffron)]">
             Aasra Senior Hub
           </h1>
           {profile && <p className="text-sm font-bold text-gray-500 mt-1">Welcome back, {profile.full_name}</p>}
@@ -422,7 +422,7 @@ const SeniorHub = () => {
               <div className="space-y-2">
                 <label className="text-sm font-bold uppercase tracking-widest text-[var(--color-gray-mid)] ml-2">Select Date</label>
                 <div className="relative">
-                  <CalendarIcon className="absolute left-5 top-1/2 transform -translate-y-1/2 text-[var(--color-gray-mid)]" size={20} />
+                  <CalendarIcon className="absolute left-3 sm:left-5 top-1/2 transform -translate-y-1/2 text-[var(--color-gray-mid)]" size={18} />
                   <input
                     type="date"
                     required
@@ -430,7 +430,7 @@ const SeniorHub = () => {
                     max={maxDate}
                     value={booking.date}
                     onChange={(e) => setBooking({ ...booking, date: e.target.value })}
-                    className="w-full pl-14 pr-6 py-4 rounded-2xl bg-white border border-[var(--color-gray-soft)] text-lg font-medium text-[var(--color-primary-black)] outline-none focus:border-[var(--color-accent-orange)] focus:ring-2 focus:ring-[var(--color-accent-orange)]/20 shadow-sm appearance-none cursor-pointer"
+                    className="w-full pl-10 sm:pl-14 pr-4 sm:pr-6 py-3 sm:py-4 rounded-2xl bg-white border border-[var(--color-gray-soft)] text-sm sm:text-lg font-medium text-[var(--color-primary-black)] outline-none focus:border-[var(--color-accent-orange)] focus:ring-2 focus:ring-[var(--color-accent-orange)]/20 shadow-sm appearance-none cursor-pointer"
                   />
                 </div>
                 <p className="text-xs text-gray-500 ml-2">Available from today onwards</p>
@@ -441,12 +441,12 @@ const SeniorHub = () => {
                 <label className="text-sm font-bold uppercase tracking-widest text-[var(--color-gray-mid)] ml-2">Select Time</label>
                 <div className="flex gap-3">
                   <div className="relative flex-1">
-                    <Clock className="absolute left-5 top-1/2 transform -translate-y-1/2 text-[var(--color-gray-mid)]" size={20} />
+                    <Clock className="absolute left-3 sm:left-5 top-1/2 transform -translate-y-1/2 text-[var(--color-gray-mid)]" size={18} />
                     <select
                       required
                       value={booking.timeHour}
                       onChange={(e) => setBooking({ ...booking, timeHour: e.target.value })}
-                      className="w-full pl-14 pr-12 py-4 rounded-2xl bg-white border border-[var(--color-gray-soft)] text-lg font-medium text-[var(--color-primary-black)] outline-none focus:border-[var(--color-accent-orange)] focus:ring-2 focus:ring-[var(--color-accent-orange)]/20 shadow-sm appearance-none cursor-pointer"
+                      className="w-full pl-10 sm:pl-14 pr-8 sm:pr-12 py-3 sm:py-4 rounded-2xl bg-white border border-[var(--color-gray-soft)] text-sm sm:text-lg font-medium text-[var(--color-primary-black)] outline-none focus:border-[var(--color-accent-orange)] focus:ring-2 focus:ring-[var(--color-accent-orange)]/20 shadow-sm appearance-none cursor-pointer"
                     >
                       {booking.timePeriod === 'AM' 
                         ? [6, 7, 8, 9, 10, 11].map(hour => (
@@ -457,7 +457,7 @@ const SeniorHub = () => {
                           ))
                       }
                     </select>
-                    <ChevronDown className="absolute right-5 top-1/2 transform -translate-y-1/2 text-[var(--color-gray-mid)] pointer-events-none" size={20} />
+                    <ChevronDown className="absolute right-3 sm:right-5 top-1/2 transform -translate-y-1/2 text-[var(--color-gray-mid)] pointer-events-none" size={18} />
                   </div>
 
                   <div className="relative flex-1">
@@ -469,12 +469,12 @@ const SeniorHub = () => {
                         const validHour = newPeriod === 'AM' ? '9' : '12';
                         setBooking({ ...booking, timePeriod: newPeriod, timeHour: validHour });
                       }}
-                      className="w-full px-6 py-4 rounded-2xl bg-white border border-[var(--color-gray-soft)] text-lg font-medium text-[var(--color-primary-black)] outline-none focus:border-[var(--color-accent-orange)] focus:ring-2 focus:ring-[var(--color-accent-orange)]/20 shadow-sm appearance-none cursor-pointer"
+                      className="w-full px-4 sm:px-6 py-3 sm:py-4 rounded-2xl bg-white border border-[var(--color-gray-soft)] text-sm sm:text-lg font-medium text-[var(--color-primary-black)] outline-none focus:border-[var(--color-accent-orange)] focus:ring-2 focus:ring-[var(--color-accent-orange)]/20 shadow-sm appearance-none cursor-pointer"
                     >
                       <option value="AM">AM</option>
                       <option value="PM">PM</option>
                     </select>
-                    <ChevronDown className="absolute right-5 top-1/2 transform -translate-y-1/2 text-[var(--color-gray-mid)] pointer-events-none" size={20} />
+                    <ChevronDown className="absolute right-3 sm:right-5 top-1/2 transform -translate-y-1/2 text-[var(--color-gray-mid)] pointer-events-none" size={18} />
                   </div>
                 </div>
               </div>
@@ -483,18 +483,18 @@ const SeniorHub = () => {
               <div className="space-y-2">
                 <label className="text-sm font-bold uppercase tracking-widest text-[var(--color-gray-mid)] ml-2">Duration (Hours)</label>
                 <div className="relative">
-                  <Clock className="absolute left-5 top-1/2 transform -translate-y-1/2 text-[var(--color-gray-mid)]" size={20} />
+                  <Clock className="absolute left-3 sm:left-5 top-1/2 transform -translate-y-1/2 text-[var(--color-gray-mid)]" size={18} />
                   <select
                     required
                     value={booking.durationValue}
                     onChange={(e) => setBooking({ ...booking, durationValue: e.target.value })}
-                    className="w-full pl-14 pr-12 py-4 rounded-2xl bg-white border border-[var(--color-gray-soft)] text-lg font-medium text-[var(--color-primary-black)] outline-none focus:border-[var(--color-accent-orange)] focus:ring-2 focus:ring-[var(--color-accent-orange)]/20 shadow-sm appearance-none cursor-pointer"
+                    className="w-full pl-10 sm:pl-14 pr-8 sm:pr-12 py-3 sm:py-4 rounded-2xl bg-white border border-[var(--color-gray-soft)] text-sm sm:text-lg font-medium text-[var(--color-primary-black)] outline-none focus:border-[var(--color-accent-orange)] focus:ring-2 focus:ring-[var(--color-accent-orange)]/20 shadow-sm appearance-none cursor-pointer"
                   >
                     {[1, 2, 3, 4, 5, 6].map(h => (
                       <option key={h} value={h}>{h} {h === 1 ? 'Hour' : 'Hours'}</option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-5 top-1/2 transform -translate-y-1/2 text-[var(--color-gray-mid)] pointer-events-none" size={20} />
+                  <ChevronDown className="absolute right-3 sm:right-5 top-1/2 transform -translate-y-1/2 text-[var(--color-gray-mid)] pointer-events-none" size={18} />
                 </div>
               </div>
 
